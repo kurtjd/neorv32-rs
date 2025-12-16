@@ -37,6 +37,11 @@ pub use chip::{Peripherals, interrupts::*, peripherals};
 pub fn init() -> Peripherals {
     // Attempt to take first so we panic before doing anything else
     let p = Peripherals::take();
+    #[cfg(feature = "single-core")]
+    // SAFETY: We're not worried about breaking any critical sections here
+    unsafe {
+        riscv::interrupt::enable()
+    }
     time_driver::init();
     p
 }
