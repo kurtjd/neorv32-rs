@@ -13,11 +13,13 @@ opt-level = "z"
 panic = "abort"
 incremental = false
 
+[features]
+default = ["single-core"]
+single-core = ["embassy-executor/arch-riscv32", "embassy-neorv32/single-core"]
+dual-core = ["embassy-neorv32/dual-core"]
+
 [dependencies]
-embassy-executor = { version = "0.9.1", features = [
-    "arch-riscv32",
-    "executor-thread",
-] }
+embassy-executor = { version = "0.9.1", features = ["executor-thread"] }
 embassy-neorv32 = { path = "../" }
 # Note: CLINT MTIMER always runs at CPU freq, thus this needs to match CPU FREQ
 # But CPU freq is configurable, so defer tick rate choice to binary

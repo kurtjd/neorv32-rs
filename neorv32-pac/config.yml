@@ -180,6 +180,9 @@ riscv_config:
     - name: "H0"
       value: 0
       description: "Hart 0"
+    - name: "H1"
+      value: 1
+      description: "Hart 1"
 
   clint:
     name: "CLINT"

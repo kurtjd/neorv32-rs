@@ -133,6 +133,8 @@ pub enum Priority {
 pub enum Hart {
     #[doc = "0 - Hart 0"]
     H0 = 0,
+    #[doc = "1 - Hart 1"]
+    H1 = 1,
 }
 pub use riscv::{
     ExceptionNumber, HartIdNumber, InterruptNumber, PriorityNumber,

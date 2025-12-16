@@ -16,7 +16,6 @@ fn machine_timer_handler() {
 }
 
 fn clint() -> crate::pac::Clint {
-    // SAFETY: TODO
     unsafe { crate::pac::Clint::steal() }
 }
 
@@ -26,7 +25,7 @@ struct MtimerDriver {
 
 impl MtimerDriver {
     fn on_interrupt(&self) {
-        clint().mtimer().disable();
+        clint().mtimer().mtimecmp0().write(u64::MAX);
 
         critical_section::with(|cs| {
             let mut queue = self.queue.borrow(cs).borrow_mut();
@@ -40,23 +39,20 @@ impl MtimerDriver {
 
     fn set_alarm(&self, ts: u64) -> bool {
         // Timestamp is in the past, so can't set the alarm
-        let t = self.now();
-        if ts <= t {
+        if ts <= self.now() {
             return false;
         }
 
         clint().mtimer().mtimecmp0().write(ts);
 
-        // Timestamp is in the past
-        let t = self.now();
-        if ts <= t {
-            false
-        } else {
-            // SAFETY: TODO
-            unsafe { clint().mtimer().enable() };
-            true
-        }
+        // Return whether timestamp is in the future (valid) or not
+        ts > self.now()
     }
+}
+
+pub(crate) fn init() {
+    clint().mtimer().mtimecmp0().write(u64::MAX);
+    unsafe { clint().mtimer().enable() };
 }
 
 impl Driver for MtimerDriver {

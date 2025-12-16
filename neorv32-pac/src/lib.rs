@@ -11,7 +11,7 @@ use generic::*;
 pub mod generic;
 #[doc = r" Interrupt numbers, priority levels, and HART IDs."]
 pub mod interrupt;
-riscv_peripheral :: clint_codegen ! (Clint , base 0xFFF40000 , mtime_freq 100000000 , harts [crate :: interrupt :: Hart :: H0 => 0]);
+riscv_peripheral :: clint_codegen ! (Clint , base 0xFFF40000 , mtime_freq 100000000 , harts [crate :: interrupt :: Hart :: H0 => 0 , crate :: interrupt :: Hart :: H1 => 1]);
 impl Clint {
     #[doc = r" Steal an instance of this peripheral"]
     #[doc = r""]

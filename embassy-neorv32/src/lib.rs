@@ -1,6 +1,7 @@
 #![no_std]
-pub mod clint;
 pub mod dma;
+#[cfg(feature = "dual-core")]
+pub mod dualcore;
 pub mod gpio;
 pub mod gptmr;
 mod interrupts;
@@ -18,11 +19,11 @@ pub mod wdt;
 mod chip {
     pub use neorv32_pac as pac;
     embassy_hal_internal::peripherals!(
-        CLINT, WDT, UART0, UART1, GPTMR, TRNG, DMA, GPIO, PORT0, PORT1, PORT2, PORT3, PORT4, PORT5,
-        PORT6, PORT7, PORT8, PORT9, PORT10, PORT11, PORT12, PORT13, PORT14, PORT15, PORT16, PORT17,
-        PORT18, PORT19, PORT20, PORT21, PORT22, PORT23, PORT24, PORT25, PORT26, PORT27, PORT28,
-        PORT29, PORT30, PORT31, PWM0, PWM1, PWM2, PWM3, PWM4, PWM5, PWM6, PWM7, PWM8, PWM9, PWM10,
-        PWM11, PWM12, PWM13, PWM14, PWM15, SPI, TWI,
+        HART1, CLINT, WDT, UART0, UART1, GPTMR, TRNG, DMA, GPIO, PORT0, PORT1, PORT2, PORT3, PORT4,
+        PORT5, PORT6, PORT7, PORT8, PORT9, PORT10, PORT11, PORT12, PORT13, PORT14, PORT15, PORT16,
+        PORT17, PORT18, PORT19, PORT20, PORT21, PORT22, PORT23, PORT24, PORT25, PORT26, PORT27,
+        PORT28, PORT29, PORT30, PORT31, PWM0, PWM1, PWM2, PWM3, PWM4, PWM5, PWM6, PWM7, PWM8, PWM9,
+        PWM10, PWM11, PWM12, PWM13, PWM14, PWM15, SPI, TWI,
     );
     pub mod interrupts {
         crate::interrupt_mod!(UART0, UART1, TRNG, DMA, GPIO, SPI);
@@ -32,15 +33,11 @@ mod chip {
 pub use chip::pac;
 pub use chip::{Peripherals, interrupts::*, peripherals};
 
-/// Initialize the HAL and enable interrupts globally.
+/// Initialize the HAL.
 pub fn init() -> Peripherals {
     // Attempt to take first so we panic before doing anything else
     let p = Peripherals::take();
-
-    // TODO: Want to ensure this is called before using asyncs, but not force it if not
-    // SAFETY: This can only be called once and before any CS
-    unsafe { riscv::interrupt::enable() };
-
+    time_driver::init();
     p
 }
 

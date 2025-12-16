@@ -3,8 +3,11 @@ An Embassy HAL for the RISCV-based [NEORV32](https://github.com/stnolting/neorv3
 
 **NOTE**: Unfortunately, NEORV32 is changing faster than I can produce this HAL, so efforts are currently paused until NEORV32 is a bit more stabilized. This project was started on `v1.12.1` but as of the time of this writing NEORV32 is on `v1.12.4` which has already introduced breaking changes to the register interface.
 
+*HOWEVER*, I'm continuing to improve the HALs in other ways, just not focusing on adding peripheral drivers
+at the moment.
+
 ## Overview
-This HAL currently supports the below peripherals for NEORV32 `v1.12.1` in a single-core configuration only (dual-core will likely work but memory safety is no longer guaranteed).
+This HAL currently supports the below peripherals for NEORV32 `v1.12.1`.
 
 Please see `embassy-neorv32/examples` for guidance on how to use this HAL in your own projects. Instructions for running the examples can be found below.
 
@@ -19,6 +22,9 @@ Please see `embassy-neorv32/examples` for guidance on how to use this HAL in you
 - WDT
 - GPTMR
 - SysInfo
+
+## Additional Features
+- Dual-core support
 
 ## Run Simulation (no FPGA required)
 - Clone [neorv32 v1.12.1](https://github.com/stnolting/neorv32/tree/v1.12.1)
