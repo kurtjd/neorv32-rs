@@ -6,4 +6,4 @@ exclude = ["embassy-neorv32/examples"]
 [workspace.package]
 version = "0.1.0"
 edition = "2024"
-repository = "https://github.com/kurtjd/embassy-neorv32"
+repository = "https://github.com/kurtjd/neorv32-rs"

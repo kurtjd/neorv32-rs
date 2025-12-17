@@ -1,47 +1,7 @@
-# embassy-neorv32
-An Embassy HAL for the RISCV-based [NEORV32](https://github.com/stnolting/neorv32) SoC/microcontroller
+# neorv32-rs
+This repo provides Rust support for the open-source [NEORV32](https://github.com/stnolting/neorv32) RISC-V microcontroller in the form of two crates:
+- [embassy-neorv32](embassy-neorv32): An async-friendly hardware abstraction layer (HAL) meant for use with [Embassy](https://github.com/embassy-rs/embassy) or any other lightweight async executor. This provides a safe, high-level library for accessing the various peripherals.
+- [neorv32-pac](neorv32-pac): An auto-generated peripheral access crate (PAC) for low-level register access to various peripherals which `embassy-neorv32` depends on. This can be used alongside the HAL for when finer control is needed, however this is inherently unsafe and should only be done so with extreme caution.
 
-**NOTE**: Unfortunately, NEORV32 is changing faster than I can produce this HAL, so efforts are currently paused until NEORV32 is a bit more stabilized. This project was started on `v1.12.1` but as of the time of this writing NEORV32 is on `v1.12.4` which has already introduced breaking changes to the register interface.
-
-*HOWEVER*, I'm continuing to improve the HALs in other ways, just not focusing on adding peripheral drivers
-at the moment.
-
-## Overview
-This HAL currently supports the below peripherals for NEORV32 `v1.12.1`.
-
-Please see `embassy-neorv32/examples` for guidance on how to use this HAL in your own projects. Instructions for running the examples can be found below.
-
-## Peripherals Currently Supported
-- SPI
-- TWI
-- GPIO
-- UART
-- DMA
-- PWM
-- TRNG
-- WDT
-- GPTMR
-- SysInfo
-
-## Additional Features
-- Dual-core support
-
-## Run Simulation (no FPGA required)
-- Clone [neorv32 v1.12.1](https://github.com/stnolting/neorv32/tree/v1.12.1)
-- Update `examples/memory.x` with your configuration
-- Uncomment `# runner = "./run-sim"` from `examples/.cargo/config.toml`
-- Update `embassy-neorv32/examples/run-sim` to your `neorv32` path
-- Install [GHDL](https://github.com/ghdl/ghdl) simulator
-- Install [llvm-objcopy](https://llvm.org/docs/CommandGuide/llvm-objcopy.html)
-- Run `cd embassy-neorv32/examples`
-- Run `cargo run --release --bin hello-world`
-
-## Run on FPGA over serial bootloader
-- Clone [neorv32 v1.12.1](https://github.com/stnolting/neorv32/tree/v1.12.1)
-- Update `examples/memory.x` with your configuration
-- Update `embassy-neorv32/examples/run-bl` to your `neorv32` path
-- Install `picocom` (or modify `run-bl` to use your preferred tool)
-- Follow instructions in `run-bl` if using `picocom`
-
-## References
-- [NEORV32 Datasheet](https://stnolting.github.io/neorv32/)
+## License
+This project is licensed under the MIT license and is completely free to use and modify.
