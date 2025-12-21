@@ -196,7 +196,7 @@ mod ihc {
 mod cs {
     use super::*;
     use core::sync::atomic::AtomicU8;
-    use core::sync::atomic::Ordering::SeqCst;
+    use core::sync::atomic::Ordering::{Acquire, Release};
 
     #[inline(always)]
     fn di() -> bool {
@@ -242,15 +242,16 @@ mod cs {
 
         // If we are the current owner of the lock, then we are in a nested cs,
         // so don't try to grab it again and return a sentinel value
-        if hart_id == LOCK_OWNER.load(SeqCst) {
+        if hart_id == LOCK_OWNER.load(Acquire) {
             LOCK_OWNED
         // Otherwise spin until lock is free and return our current interrupt status
         } else {
-            spin();
-            LOCK_OWNER.store(hart_id, SeqCst);
-
             // Interrupts disabled -> 0, enabled -> 1
-            di() as _
+            let status = di() as u8;
+
+            spin();
+            LOCK_OWNER.store(hart_id, Release);
+            status
         }
     }
 
@@ -269,7 +270,7 @@ mod cs {
     mod cs_impl {
         use super::*;
         use core::sync::atomic::AtomicBool;
-        use core::sync::atomic::Ordering::SeqCst;
+        use core::sync::atomic::Ordering::{Acquire, Relaxed, Release};
 
         static LOCK: AtomicBool = AtomicBool::new(false);
 
@@ -279,21 +280,24 @@ mod cs {
         unsafe impl critical_section::Impl for CasLock {
             unsafe fn acquire() -> critical_section::RawRestoreState {
                 acquire(|| {
-                    while LOCK.compare_exchange(false, true, SeqCst, SeqCst).is_err() {
+                    while LOCK
+                        .compare_exchange_weak(false, true, Acquire, Relaxed)
+                        .is_err()
+                    {
                         core::hint::spin_loop();
                     }
                 })
             }
 
             unsafe fn release(status: critical_section::RawRestoreState) {
-                release(status, || LOCK.store(false, SeqCst));
+                release(status, || LOCK.store(false, Release));
             }
         }
     }
 
     // If A extension not available, implement spinlock via Peterson's algorithm
     //
-    // NEORV32 only has 2 harts and atomics should emit `fence` instructions to synchronize across caches,
+    // NEORV32 only has 2 harts and SeqCst gives strong ordering between harts
     // so Peterson should be sound here, albeit less efficient than atomic CAS
     //
     // https://en.wikipedia.org/wiki/Peterson%27s_algorithm
@@ -301,9 +305,9 @@ mod cs {
     mod cs_impl {
         use super::*;
         use core::sync::atomic::Ordering::SeqCst;
-        use core::sync::atomic::{AtomicBool, AtomicU8};
+        use core::sync::atomic::{AtomicBool, AtomicUsize};
 
-        static TURN: AtomicU8 = AtomicU8::new(0);
+        static TURN: AtomicUsize = AtomicUsize::new(0);
         static FLAG: [AtomicBool; NHARTS] = [const { AtomicBool::new(false) }; NHARTS];
 
         struct PetersonLock;
@@ -313,11 +317,11 @@ mod cs {
             unsafe fn acquire() -> critical_section::RawRestoreState {
                 acquire(|| {
                     let this = ihc::whoami().number();
-                    let other = (1 - this) as u8;
+                    let other = 1 - this;
                     FLAG[this].store(true, SeqCst);
                     TURN.store(other, SeqCst);
 
-                    while FLAG[other as usize].load(SeqCst) && TURN.load(SeqCst) == other {
+                    while FLAG[other].load(SeqCst) && TURN.load(SeqCst) == other {
                         core::hint::spin_loop();
                     }
                 })
@@ -334,7 +338,7 @@ pub mod executor {
     use super::*;
     use core::marker::PhantomData;
     use core::sync::atomic::AtomicBool;
-    use core::sync::atomic::Ordering::SeqCst;
+    use core::sync::atomic::Ordering::{Acquire, Relaxed, Release};
     use embassy_executor::{Spawner, raw};
 
     static SEV_FLAG: [AtomicBool; NHARTS] = [const { AtomicBool::new(false) }; NHARTS];
@@ -343,7 +347,7 @@ pub mod executor {
     #[inline(always)]
     fn sev() {
         for sev_flag in &SEV_FLAG {
-            sev_flag.store(true, SeqCst);
+            sev_flag.store(true, Release);
         }
 
         // We wake the other hart in case it now has work to do
@@ -364,8 +368,8 @@ pub mod executor {
         // We want to make sure we don't miss a MSWI between seeing the flag is false and wfi
         // We are not worried about doing an atomic CAS on the flag though
         cs::without_interrupts(|| {
-            if SEV_FLAG[hart_id].load(SeqCst) {
-                SEV_FLAG[hart_id].store(false, SeqCst);
+            if SEV_FLAG[hart_id].load(Acquire) {
+                SEV_FLAG[hart_id].store(false, Relaxed);
             } else {
                 riscv::asm::wfi();
             }
