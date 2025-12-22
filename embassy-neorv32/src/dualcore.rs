@@ -167,7 +167,7 @@ mod ihc {
     pub(super) fn sleep() {
         // We don't want the mswi_handler trapping right now,
         // since we want to read the flag before clearing ourselves
-        cs::without_interrupts(|| {
+        crate::interrupts::free(|| {
             while !clint().mswi().msip_mhartid().is_pending() {
                 riscv::asm::wfi();
             }
@@ -198,38 +198,6 @@ mod cs {
     use core::sync::atomic::AtomicU8;
     use core::sync::atomic::Ordering::{Acquire, Release};
 
-    #[inline(always)]
-    fn di() -> bool {
-        let mut mstatus: usize;
-        // SAFETY: This asm has the effect of disabling interrupts which is desired,
-        // and it returns a value that is the correct bit representation of `Mstatus`
-        unsafe {
-            core::arch::asm!("csrrci {}, mstatus, 0b1000", out(reg) mstatus);
-            core::mem::transmute::<usize, riscv::register::mstatus::Mstatus>(mstatus).mie()
-        }
-    }
-
-    #[inline(always)]
-    fn ei(was_active: bool) {
-        if was_active {
-            // SAFETY: We won't break any critical sections where this is used
-            unsafe { riscv::interrupt::enable() }
-        }
-    }
-
-    // A critical section that only disables interrupts, meant to synchronize on a single hart only
-    // Used internally for when we are only worried about being interrupted and not accessing state shared between harts
-    //
-    // This gives us slight performance gains and is also necessary for the times we need to call wfi
-    // within a critical section (which would block the other hart for far too long
-    // if we used the dual-core critical section)
-    pub(super) fn without_interrupts<R>(f: impl FnOnce() -> R) -> R {
-        let was_active = di();
-        let ret = f();
-        ei(was_active);
-        ret
-    }
-
     // Need to track this since critical sections can be nested
     const LOCK_UNOWNED: u8 = 0;
     const LOCK_OWNED: u8 = 2;
@@ -247,7 +215,7 @@ mod cs {
         // Otherwise spin until lock is free and return our current interrupt status
         } else {
             // Interrupts disabled -> 0, enabled -> 1
-            let status = di() as u8;
+            let status = crate::interrupts::disable() as u8;
             spin();
             LOCK_OWNER.store(owner_id, Release);
             status
@@ -261,7 +229,7 @@ mod cs {
         if status != LOCK_OWNED {
             free();
             LOCK_OWNER.store(LOCK_UNOWNED, Release);
-            ei(status == 1)
+            crate::interrupts::restore(status == 1)
         }
     }
 
@@ -367,7 +335,7 @@ pub mod executor {
 
         // We want to make sure we don't miss a MSWI between seeing the flag is false and wfi
         // We are not worried about doing an atomic CAS on the flag though
-        cs::without_interrupts(|| {
+        crate::interrupts::free(|| {
             if SEV_FLAG[hart_id].load(Acquire) {
                 SEV_FLAG[hart_id].store(false, Relaxed);
             } else {
