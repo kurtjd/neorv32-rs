@@ -1,10 +1,14 @@
-[target.riscv32imc-unknown-none-elf]
-# Uncomment to run simulation
-# runner = "./run-sim"
-runner = "./run-bl"
+[alias]
+run-sim = "run --config .cargo/runner.sim.toml --no-default-features --features single-core,sim"
+run-fpga = "run --config .cargo/runner.fpga.toml --no-default-features --features single-core,fpga"
+run-dc-sim = "run --config .cargo/runner.sim.toml --no-default-features --features dual-core,sim"
+run-dc-fpga = "run --config .cargo/runner.fpga.toml --no-default-features --features dual-core,fpga"
+build-sim = "build --no-default-features --features single-core,sim"
+build-fpga = "build --no-default-features --features single-core,fpga"
+build-dc-sim = "build --no-default-features --features dual-core,sim"
+build-dc-fpga = "build --no-default-features --features dual-core,fpga"
 
-rustflags = ["-C", "link-arg=-Tlink.x"]
-
-# neorv32 supports quite a few ISA extensions but good for dev to keep it minimal
+# Target can be modified depending on which extensions your NEORV32 config supports
 [build]
 target = "riscv32imc-unknown-none-elf"
+rustflags = ["-C", "link-arg=-Tlink.x"]

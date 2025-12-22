@@ -4,16 +4,16 @@
 use core::fmt::Write;
 use embassy_neorv32::pwm::Pwm;
 use embassy_neorv32::uart::UartTx;
+use embassy_neorv32_examples::*;
 use embassy_time::Timer;
 use embedded_hal_02::Pwm as PwmTrait;
-use panic_halt as _;
 
 #[embassy_executor::main]
 async fn main(_spawner: embassy_executor::Spawner) {
     let p = embassy_neorv32::init();
 
     // Setup UART for display purposes
-    let mut uart = UartTx::new_blocking(p.UART0, 19200, false, false);
+    let mut uart = UartTx::new_blocking(p.UART0, UART_BAUD, UART_IS_SIM, false);
 
     // Setup PWM channel 0
     let mut pwm0 = Pwm::new(p.PWM0, 42, false);
@@ -49,6 +49,6 @@ async fn main(_spawner: embassy_executor::Spawner) {
 
     // Keep PWM alive
     loop {
-        Timer::after_secs(10).await;
+        Timer::after_micros(s_to_us(10)).await;
     }
 }

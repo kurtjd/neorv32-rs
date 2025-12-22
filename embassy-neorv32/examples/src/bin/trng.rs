@@ -5,8 +5,8 @@ use embassy_neorv32::bind_interrupts;
 use embassy_neorv32::peripherals;
 use embassy_neorv32::trng::{self, Trng};
 use embassy_neorv32::uart::{self, UartTx};
+use embassy_neorv32_examples::*;
 use embassy_time::Timer;
-use panic_halt as _;
 
 bind_interrupts!(struct Irqs {
     TRNG => trng::InterruptHandler<peripherals::TRNG>;
@@ -18,7 +18,7 @@ async fn main(_spawner: embassy_executor::Spawner) {
     let p = embassy_neorv32::init();
 
     // Setup UART for display purposes
-    let mut uart = UartTx::new_async(p.UART0, 19200, false, false, Irqs);
+    let mut uart = UartTx::new_async(p.UART0, UART_BAUD, UART_IS_SIM, false, Irqs);
 
     // Setup async TRNG
     let mut trng = Trng::new_async(p.TRNG, Irqs);
@@ -37,6 +37,6 @@ async fn main(_spawner: embassy_executor::Spawner) {
 
         writeln!(&mut uart, "Random word1: 0x{word1:08X}").unwrap();
         writeln!(&mut uart, "Random word2: 0x{word2:08X}").unwrap();
-        Timer::after_secs(1).await;
+        Timer::after_micros(s_to_us(1)).await;
     }
 }

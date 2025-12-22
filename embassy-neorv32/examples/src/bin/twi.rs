@@ -3,9 +3,9 @@
 use core::fmt::Write;
 use embassy_neorv32::twi::Twi;
 use embassy_neorv32::uart::UartTx;
+use embassy_neorv32_examples::*;
 use embassy_time::Timer;
 use lm75::{Address, Lm75};
-use panic_halt as _;
 
 // I've tied my LM75 addr pins all to ground
 // Change this depending on your configuration
@@ -16,7 +16,7 @@ async fn main(_spawner: embassy_executor::Spawner) {
     let p = embassy_neorv32::init();
 
     // Setup UART for display purposes
-    let mut uart = UartTx::new_blocking(p.UART0, 19200, false, false);
+    let mut uart = UartTx::new_blocking(p.UART0, UART_BAUD, UART_IS_SIM, false);
 
     // Setup TWI with frequency of 100 kHz and clock stretching enabled
     let twi = Twi::new_blocking(p.TWI, 100_000, true);
@@ -36,6 +36,6 @@ async fn main(_spawner: embassy_executor::Spawner) {
         } else {
             uart.blocking_write(b"Error reading from LM75\n");
         }
-        Timer::after_secs(1).await;
+        Timer::after_micros(s_to_us(1)).await;
     }
 }

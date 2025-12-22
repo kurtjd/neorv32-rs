@@ -5,11 +5,11 @@ use embassy_neorv32::bind_interrupts;
 use embassy_neorv32::dma::{self, Dma};
 use embassy_neorv32::peripherals;
 use embassy_neorv32::uart::{self, UartTx};
+use embassy_neorv32_examples::*;
 use embassy_sync::blocking_mutex::raw::CriticalSectionRawMutex;
 use embassy_sync::mutex::Mutex;
 use embassy_sync::once_lock::OnceLock;
 use embassy_time::Timer;
-use panic_halt as _;
 
 bind_interrupts!(struct Irqs {
     DMA => dma::InterruptHandler<peripherals::DMA>;
@@ -36,7 +36,7 @@ async fn dma_transfer(mut dma: Dma<'static>, uart: &'static UartMutex) {
             }
         }
 
-        Timer::after_secs(2).await;
+        Timer::after_micros(s_to_us(2)).await;
     }
 }
 
@@ -45,7 +45,7 @@ async fn main(spawner: embassy_executor::Spawner) {
     let p = embassy_neorv32::init();
 
     // Setup UART just for printing WDT state
-    let uart = UartTx::new_async(p.UART0, 19200, false, false, Irqs);
+    let uart = UartTx::new_async(p.UART0, UART_BAUD, UART_IS_SIM, false, Irqs);
     let uart = UART.get_or_init(|| Mutex::new(uart));
 
     // Setup DMA
@@ -54,6 +54,6 @@ async fn main(spawner: embassy_executor::Spawner) {
 
     loop {
         uart.lock().await.write(b"Doing some work...\n").await;
-        Timer::after_secs(1).await;
+        Timer::after_micros(s_to_us(1)).await;
     }
 }

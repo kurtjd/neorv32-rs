@@ -5,10 +5,10 @@ use embassy_neorv32::dma::{self, Dma};
 use embassy_neorv32::gpio::Gpio;
 use embassy_neorv32::peripherals;
 use embassy_neorv32::spi::{self, MODE_0, Spi};
+use embassy_neorv32_examples as _;
 use embassy_time::{Delay, Timer};
 use embedded_hal_bus::spi::ExclusiveDevice;
 use is31fl3743b_driver::{CSy, Is31fl3743b, SWx};
-use panic_halt as _;
 
 bind_interrupts!(struct Irqs {
     DMA => dma::InterruptHandler<peripherals::DMA>;

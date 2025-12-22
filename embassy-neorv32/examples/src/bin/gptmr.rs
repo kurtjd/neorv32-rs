@@ -3,7 +3,7 @@
 use embassy_neorv32::gptmr::{Gptmr, Prescaler};
 use embassy_neorv32::pac;
 use embassy_neorv32::uart::UartTx;
-use panic_halt as _;
+use embassy_neorv32_examples::*;
 
 #[riscv_rt::core_interrupt(pac::interrupt::CoreInterrupt::GPTMR)]
 fn gptmr_handler() {
@@ -24,7 +24,7 @@ fn main() -> ! {
     let p = embassy_neorv32::init();
 
     // Setup UART for display purposes (unsafely write to it in ISR)
-    let _ = UartTx::new_blocking(p.UART0, 19200, false, false);
+    let _ = UartTx::new_blocking(p.UART0, UART_BAUD, UART_IS_SIM, false);
 
     // Setup GPTMR
     // SAFETY: Enabling the GPTMR interrupt here is valid

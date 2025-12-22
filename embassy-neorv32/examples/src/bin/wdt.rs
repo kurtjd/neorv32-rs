@@ -4,19 +4,19 @@
 use core::fmt::Write;
 use embassy_neorv32::uart::UartTx;
 use embassy_neorv32::wdt::{ResetCause, Wdt};
+use embassy_neorv32_examples::*;
 use embassy_time::Timer;
-use panic_halt as _;
 
 #[embassy_executor::main]
 async fn main(_spawner: embassy_executor::Spawner) {
     let p = embassy_neorv32::init();
 
     // Setup UART just for printing WDT state
-    let mut uart = UartTx::new_blocking(p.UART0, 19200, false, false);
+    let mut uart = UartTx::new_blocking(p.UART0, UART_BAUD, UART_IS_SIM, false);
 
     // Setup WDT with timeout of 1ms and enable it then lock it
     let wdt = Wdt::new(p.WDT);
-    wdt.set_timeout_ms(1000);
+    wdt.set_timeout_ms(ms_to_us(1000) as u32);
     wdt.enable();
     let wdt = wdt.lock();
 
@@ -39,7 +39,7 @@ async fn main(_spawner: embassy_executor::Spawner) {
     for _ in 0..10 {
         uart.blocking_write(b"Feeding watchdog...\n");
         wdt.feed();
-        Timer::after_millis(500).await;
+        Timer::after_micros(ms_to_us(500)).await;
     }
     uart.blocking_write(b"Waiting for watchdog timeout...\n");
 }

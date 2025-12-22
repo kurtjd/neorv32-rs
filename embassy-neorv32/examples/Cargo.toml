@@ -1,7 +1,7 @@
 [workspace]
 
 [package]
-name = "neorv32-embassy-examples"
+name = "embassy-neorv32-examples"
 version = "0.1.0"
 edition = "2024"
 
@@ -14,26 +14,36 @@ panic = "abort"
 incremental = false
 
 [features]
-default = ["single-core"]
+default = ["single-core", "sim"]
 single-core = ["embassy-executor/arch-riscv32", "embassy-neorv32/single-core"]
 dual-core = ["embassy-neorv32/dual-core"]
 
+# *Note*: The time-driver implementation relies on the CLINT mtimer which always runs at
+# CPU frequency. Unfortunately, embassy-time requires us to pick a fixed static tick rate,
+# so you MUST ensure this matches your configured CPU clock speed.
+#
+# Supported tick rates: https://docs.embassy.dev/embassy-time/git/default/index.html#tick-rate
+fpga = ["embassy-time/tick-hz-50_000_000"]
+sim = ["embassy-time/tick-hz-100_000_000"]
+
 [dependencies]
-embassy-executor = { version = "0.9.1", features = ["executor-thread"] }
+# Embassy support
 embassy-neorv32 = { path = "../" }
-# Note: CLINT MTIMER always runs at CPU freq, thus this needs to match CPU FREQ
-# But CPU freq is configurable, so defer tick rate choice to binary
-embassy-time = { version = "0.5.0", features = ["tick-hz-50_000_000"] }
+embassy-time = { version = "0.5.0" }
+embassy-executor = { version = "0.9.1", features = ["executor-thread"] }
 embassy-sync = "0.7.2"
+
+# Runtime/arch support
 riscv = "0.15.0"
 riscv-rt = "0.16.0"
-panic-halt = "1.0.0"
 
+# PWM example makes use of these traits directly
 embedded-hal-02 = { package = "embedded-hal", version = "0.2.7", features = [
     "unproven",
 ] }
-embedded-hal-1 = { package = "embedded-hal", version = "1.0" }
+# SPI example uses this for SpiDevice
 embedded-hal-bus = { version = "0.3.0", features = ["async"] }
 
-is31fl3743b-driver = { version = "0.1.1" }
+# Device drivers just for TWI/SPI examples
+is31fl3743b-driver = "0.1.1"
 lm75 = "1.0.0"

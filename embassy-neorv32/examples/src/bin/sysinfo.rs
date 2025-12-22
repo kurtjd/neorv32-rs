@@ -3,14 +3,14 @@
 use core::fmt::Write;
 use embassy_neorv32::sysinfo::SysInfo;
 use embassy_neorv32::uart::UartTx;
-use panic_halt as _;
+use embassy_neorv32_examples::*;
 
 #[embassy_executor::main]
 async fn main(_spawner: embassy_executor::Spawner) {
     let p = embassy_neorv32::init();
 
     // Setup UART for display purposes
-    let mut uart = UartTx::new_blocking(p.UART0, 19200, false, false);
+    let mut uart = UartTx::new_blocking(p.UART0, UART_BAUD, UART_IS_SIM, false);
 
     // Print clock frequency
     writeln!(

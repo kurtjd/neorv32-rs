@@ -4,11 +4,11 @@ use embassy_neorv32::bind_interrupts;
 use embassy_neorv32::gpio::{self, Gpio};
 use embassy_neorv32::peripherals;
 use embassy_neorv32::uart::{self, UartTx};
+use embassy_neorv32_examples::*;
 use embassy_sync::blocking_mutex::raw::CriticalSectionRawMutex;
 use embassy_sync::mutex::Mutex;
 use embassy_sync::once_lock::OnceLock;
 use embassy_time::Timer;
-use panic_halt as _;
 
 type UartMutex = Mutex<CriticalSectionRawMutex, UartTx<'static, uart::Async>>;
 
@@ -33,7 +33,7 @@ async fn input_task(
 async fn output_task(mut output_pin: gpio::Output<'static>, ms: u64) {
     loop {
         output_pin.toggle();
-        Timer::after_millis(ms).await;
+        Timer::after_micros(ms_to_us(ms)).await;
     }
 }
 
@@ -42,7 +42,7 @@ async fn main(spawner: embassy_executor::Spawner) {
     let p = embassy_neorv32::init();
 
     static UART: OnceLock<UartMutex> = OnceLock::new();
-    let uart = UartTx::new_async(p.UART0, 19200, false, false, Irqs);
+    let uart = UartTx::new_async(p.UART0, UART_BAUD, UART_IS_SIM, false, Irqs);
     let uart = UART.get_or_init(|| Mutex::new(uart));
 
     let gpio = Gpio::new_async(p.GPIO, Irqs);

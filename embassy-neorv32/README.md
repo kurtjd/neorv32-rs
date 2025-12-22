@@ -1,7 +1,7 @@
 # Embassy NEORV32 HAL
 HALs implement safe, idiomatic Rust APIs to use the hardware capabilities, so raw register manipulation is not needed.
 
-The embassy-neorv32 HAL targets the open-source [NEORV32](https://github.com/stnolting/neorv32)
+The `embassy-neorv32` HAL targets the open-source [NEORV32](https://github.com/stnolting/neorv32)
 RISC-V microcontroller and implements both blocking and async APIs/drivers for most of the peripherals.
 Additionally, async and blocking traits from [embedded-hal](https://crates.io/crates/embedded-hal)
 are implemented where appropriate.
@@ -29,27 +29,36 @@ At this time, the HAL currently supports the following peripherals and features 
 - Dual-core support
 
 ## Usage
-Please see `embassy-neorv32/examples` for examples on how to use this HAL in your own projects.
-Instructions for running the examples can be found below. *Note* that some other things may need to change
-depending on running in simulation or on FPGA (such as time intervals for example, since a simulated
-microsecond is much slower than a real second). Eventually would like to make this more streamlined.
+Please see `embassy-neorv32/examples` for examples on how to use this HAL in your own projects.  
+To run these examples, follow these steps:
 
-## Run Simulation (no FPGA required)
+- Install [cargo-binutils](https://crates.io/crates/cargo-binutils)
+- Modify build target in `embassy-neorv32/.cargo/config.toml` to match your configuration
+- Modify `embassy-neorv32/examples/memory.x` to match the size of your configured `DMEM` and `IMEM`
+- Modify `embassy-neorv32/examples/Cargo.toml` features `sim` and `fpga` such that
+the `tick-hz` feature for `embassy-time` matches your configuration
+- Modify `UART_BAUD` in `embassy-neorv33/examples/src/lib.rs` to match your host UART
 - Clone [neorv32 v1.12.1](https://github.com/stnolting/neorv32/tree/v1.12.1)
-- Update `examples/memory.x` with your configuration
-- Uncomment `# runner = "./run-sim"` from `examples/.cargo/config.toml`
-- Update `embassy-neorv32/examples/run-sim` to your `neorv32` path
+- Continue with one of the series of steps below depending on if running in simulation or on FPGA
+
+### Simulation
+- Modify `BASE` in `embassy-neorv32/examples/run-sim` to your `neorv32` repo path
 - Install [GHDL](https://github.com/ghdl/ghdl) simulator
-- Install [llvm-objcopy](https://llvm.org/docs/CommandGuide/llvm-objcopy.html)
-- Run `cd embassy-neorv32/examples`
-- Run `cargo run --release --bin hello-world`
+- From examples folder, run `cargo run-sim --release --bin hello-world`
+- For more help, see [simulating the processor](https://stnolting.github.io/neorv32/ug/#_simulating_the_processor)
 
-## Run on FPGA over serial bootloader
-- Clone [neorv32 v1.12.1](https://github.com/stnolting/neorv32/tree/v1.12.1)
-- Update `examples/memory.x` with your configuration
-- Update `embassy-neorv32/examples/run-bl` to your `neorv32` path
-- Install `picocom` (or modify `run-bl` to use your preferred tool)
-- Follow instructions in `run-bl` if using `picocom`
+### FPGA over UART bootloader
+- Modify `BASE` in `embassy-neorv32/examples/run-fpga` to your `neorv32` repo path
+- Install `picocom` (or modify `run-fpga` to use your preferred tool)
+- From examples folder, run `cargo run-fpga --release --bin hello-world`
+- Press reset button on FPGA
+- If using `picocom`, manually follow these steps within host terminal:
+- Type: Any key
+- Type: u (Upload)
+- Type: Ctrl+A Ctrl+S (send file)
+- Type: hello-world-fpga
+- For more help, see [bootloader](https://stnolting.github.io/neorv32/#_bootloader)
 
 ## References
 - [NEORV32 Datasheet](https://stnolting.github.io/neorv32/)
+- [NEORV32 User Guide](https://stnolting.github.io/neorv32/ug/)

@@ -3,7 +3,7 @@
 use embassy_neorv32::bind_interrupts;
 use embassy_neorv32::peripherals;
 use embassy_neorv32::uart::{self, UartTx};
-use panic_halt as _;
+use embassy_neorv32_examples::*;
 
 bind_interrupts!(struct Irqs {
     UART0 => uart::InterruptHandler<peripherals::UART0>;
@@ -43,7 +43,7 @@ async fn main(_spawner: embassy_executor::Spawner) {
     let p = embassy_neorv32::init();
 
     // Setup UART in regular (non-simulated) mode with no HW flow control and baud rate of 19200
-    let mut uart = UartTx::new_async(p.UART0, 19200, false, false, Irqs);
+    let mut uart = UartTx::new_async(p.UART0, UART_BAUD, UART_IS_SIM, false, Irqs);
     print_logo(&mut uart).await;
 
     // Note: '\n' seems necessary for UART writes for sim to flush output
