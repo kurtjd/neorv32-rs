@@ -33,15 +33,25 @@ mod chip {
 pub use chip::pac;
 pub use chip::{Peripherals, interrupts::*, peripherals};
 
-/// Initialize the HAL.
+/// Initialize the HAL. This must only be called from hart 0.
+///
+/// # Panics
+///
+/// Panics if this has already been called once before or not called from hart 0.
 pub fn init() -> Peripherals {
+    assert_eq!(riscv::register::mhartid::read(), 0);
+
     // Attempt to take first so we panic before doing anything else
     let p = Peripherals::take();
+
+    // In dual-core, global interrupts are enabled in hart_main()
+    // So for single-core just enable them now
     #[cfg(feature = "single-core")]
     // SAFETY: We're not worried about breaking any critical sections here
     unsafe {
         riscv::interrupt::enable()
     }
+
     time_driver::init();
     p
 }
