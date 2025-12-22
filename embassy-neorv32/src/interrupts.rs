@@ -164,13 +164,8 @@ pub(crate) fn restore(was_active: bool) {
     }
 }
 
-// A critical section that only disables interrupts, meant to synchronize on a single hart only
-// Used internally for when we are only worried about being interrupted and not accessing state shared between harts
-//
-// This gives us slight performance gains and is also necessary for the times we need to call wfi
-// within a critical section (which would block the other hart for far too long
-// if we used the dual-core critical section)
-pub(crate) fn free<R>(f: impl FnOnce() -> R) -> R {
+/// A critical section that only disables interrupts, meant to synchronize on a single hart only.
+pub fn free<R>(f: impl FnOnce() -> R) -> R {
     let was_active = disable();
     let ret = f();
     restore(was_active);

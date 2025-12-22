@@ -4,7 +4,7 @@ pub mod dma;
 pub mod dualcore;
 pub mod gpio;
 pub mod gptmr;
-mod interrupts;
+pub mod interrupts;
 pub mod pwm;
 pub mod spi;
 pub mod sysinfo;
