@@ -29,28 +29,28 @@ At this time, the HAL currently supports the following peripherals and features 
 - Dual-core support
 
 ## Usage
-Please see `embassy-neorv32/examples` for examples on how to use this HAL in your own projects.  
+Please see the `examples` folder for ideas on how to use this HAL in your own projects.  
 To run these examples, follow these steps:
 
 - Install [cargo-binutils](https://crates.io/crates/cargo-binutils)
-- Modify build target in `embassy-neorv32/.cargo/config.toml` to match your configuration
-- Modify `embassy-neorv32/examples/memory.x` to match the size of your configured `DMEM` and `IMEM`
-- Modify `embassy-neorv32/examples/Cargo.toml` features `sim` and `fpga` such that
+- Modify build target in `examples/.cargo/config.toml` to match your configuration
+- Modify `examples/memory.x` to match the size of your configured `DMEM` and `IMEM`
+- Modify `examples/Cargo.toml` features `sim` and `fpga` such that
 the `tick-hz` feature for `embassy-time` matches your configuration
-- Modify `UART_BAUD` in `embassy-neorv33/examples/src/lib.rs` to match your host UART
+- Modify `UART_BAUD` in `examples/src/lib.rs` to match your host UART
 - Clone [neorv32 v1.12.1](https://github.com/stnolting/neorv32/tree/v1.12.1)
 - Continue with one of the series of steps below depending on if running in simulation or on FPGA
 
 ### Simulation
-- Modify `BASE` in `embassy-neorv32/examples/run-sim` to your `neorv32` repo path
+- Modify `BASE` in `examples/run-sim` to your `neorv32` repo path
 - Install [GHDL](https://github.com/ghdl/ghdl) simulator
 - From examples folder, run `cargo run-sim --release --bin hello-world`
 - For more help, see [simulating the processor](https://stnolting.github.io/neorv32/ug/#_simulating_the_processor)
 
 ### FPGA over UART bootloader
-- Modify `BASE` in `embassy-neorv32/examples/run-fpga` to your `neorv32` repo path
+- Modify `BASE` in `examples/run-fpga` to your `neorv32` repo path
 - Install `picocom` (or modify `run-fpga` to use your preferred tool)
-- From examples folder, run `cargo run-fpga --release --bin hello-world`
+- From the `examples` folder, run `cargo run-fpga --release --bin hello-world`
 - Press reset button on FPGA
 - If using `picocom`, manually follow these steps within host terminal:
 - Type: Any key
