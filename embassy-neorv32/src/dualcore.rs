@@ -238,19 +238,18 @@ mod cs {
     #[inline(always)]
     fn acquire(spin: impl Fn()) -> u8 {
         // Hart 0 -> 1, Hart 1 -> 2
-        let hart_id = ihc::whoami().number() as u8 + 1;
+        let owner_id = ihc::whoami().number() as u8 + 1;
 
         // If we are the current owner of the lock, then we are in a nested cs,
         // so don't try to grab it again and return a sentinel value
-        if hart_id == LOCK_OWNER.load(Acquire) {
+        if owner_id == LOCK_OWNER.load(Acquire) {
             LOCK_OWNED
         // Otherwise spin until lock is free and return our current interrupt status
         } else {
             // Interrupts disabled -> 0, enabled -> 1
             let status = di() as u8;
-
             spin();
-            LOCK_OWNER.store(hart_id, Release);
+            LOCK_OWNER.store(owner_id, Release);
             status
         }
     }
@@ -261,6 +260,7 @@ mod cs {
         // (as in, a nested cs should do nothing here since it didn't need to acquire the lock)
         if status != LOCK_OWNED {
             free();
+            LOCK_OWNER.store(LOCK_UNOWNED, Release);
             ei(status == 1)
         }
     }
