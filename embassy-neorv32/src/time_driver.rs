@@ -1,5 +1,11 @@
-//! Extremely basic and very likely not sound
-//! Just a simple PoC for now
+//! Time Driver.
+//!
+//! Uses the CLINT MTIMER peripheral to manage time.
+//! This is intended to work on both a single-core and dual-core configuration.
+//!
+//! In the case of dual-core, hart 0 will always be the owner of time-keeping,
+//! and is solely responsible for handling timer interrupts and waking tasks
+//! as appropriate on both harts' executors.
 use core::cell::RefCell;
 use embassy_sync::blocking_mutex::Mutex;
 use embassy_sync::blocking_mutex::raw::CriticalSectionRawMutex;
@@ -16,6 +22,7 @@ fn machine_timer_handler() {
 }
 
 fn clint() -> crate::pac::Clint {
+    // SAFETY: We are the only ones who use mtimecmp0 and mtimer, so we can manage it safely
     unsafe { crate::pac::Clint::steal() }
 }
 
@@ -40,18 +47,23 @@ impl MtimerDriver {
     fn set_alarm(&self, ts: u64) -> bool {
         // Timestamp is in the past, so can't set the alarm
         if ts <= self.now() {
-            return false;
+            false
+        // Otherwise try to set the alarm but double check the ts isn't in the past again
+        } else {
+            clint().mtimer().mtimecmp0().write(ts);
+            ts > self.now()
         }
-
-        clint().mtimer().mtimecmp0().write(ts);
-
-        // Return whether timestamp is in the future (valid) or not
-        ts > self.now()
     }
 }
 
 pub(crate) fn init() {
+    // Ensure only hart 0 initializes time-driver
+    assert_eq!(riscv::register::mhartid::read(), 0);
+
+    // Set the compare value far, far in the future so interrupt won't trigger yet
     clint().mtimer().mtimecmp0().write(u64::MAX);
+
+    // SAFETY: It is okay to enable mtimer interrupts here
     unsafe { clint().mtimer().enable() };
 }
 

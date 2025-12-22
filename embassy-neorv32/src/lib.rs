@@ -39,8 +39,6 @@ pub use chip::{Peripherals, interrupts::*, peripherals};
 ///
 /// Panics if this has already been called once before or not called from hart 0.
 pub fn init() -> Peripherals {
-    assert_eq!(riscv::register::mhartid::read(), 0);
-
     // Attempt to take first so we panic before doing anything else
     let p = Peripherals::take();
 
