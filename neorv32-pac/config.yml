@@ -186,8 +186,10 @@ riscv_config:
 
   clint:
     name: "CLINT"
-    mtime_freq: 100000000
+    # Note: Unfortunately the clint codegen expects a static value here, but we don't know
+    # what the user has their main CPU clock set to (and mtimer clock matches CPU clock on
+    # NEORV32). So, we just make this 0 because we don't use it in our HAL.
+    mtime_freq: 0
 
   base_isa: "rv32i"
-  
   mtvec_align: 128
