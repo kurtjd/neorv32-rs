@@ -144,30 +144,3 @@ macro_rules! interrupt_mod {
         }
     };
 }
-
-// Disables interrupts (if enabled) and returns the interrupt enabled status before we disabled
-pub(crate) fn disable() -> bool {
-    let mut mstatus: usize;
-    // SAFETY: This asm has the effect of disabling interrupts which is desired,
-    // and it returns a value that is the correct bit representation of `Mstatus`
-    unsafe {
-        core::arch::asm!("csrrci {}, mstatus, 0b1000", out(reg) mstatus);
-        core::mem::transmute::<usize, riscv::register::mstatus::Mstatus>(mstatus).mie()
-    }
-}
-
-// Restores interrupt enabled status to previous state from a `disable()`
-pub(crate) fn restore(was_active: bool) {
-    if was_active {
-        // SAFETY: We won't break any critical sections where this is used
-        unsafe { riscv::interrupt::enable() }
-    }
-}
-
-/// A critical section that only disables interrupts, meant to synchronize on a single hart only.
-pub fn free<R>(f: impl FnOnce() -> R) -> R {
-    let was_active = disable();
-    let ret = f();
-    restore(was_active);
-    ret
-}

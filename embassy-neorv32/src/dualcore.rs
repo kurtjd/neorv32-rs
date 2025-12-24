@@ -167,7 +167,7 @@ mod ihc {
     pub(super) fn sleep() {
         // We don't want the mswi_handler trapping right now,
         // since we want to read the flag before clearing ourselves
-        crate::interrupts::free(|| {
+        riscv::interrupt::free(|| {
             while !clint().mswi().msip_mhartid().is_pending() {
                 riscv::asm::wfi();
             }
@@ -214,11 +214,16 @@ mod cs {
             LOCK_OWNED
         // Otherwise spin until lock is free and return our current interrupt status
         } else {
-            // Interrupts disabled -> 0, enabled -> 1
-            let status = crate::interrupts::disable() as u8;
+            let mut mstatus;
+            // SAFETY: This asm has the effect of disabling interrupts which is desired,
+            // and it returns a value that is the correct bit representation of `Mstatus`
+            unsafe {
+                core::arch::asm!("csrrci {}, mstatus, 0b1000", out(reg) mstatus);
+                core::mem::transmute::<usize, riscv::register::mstatus::Mstatus>(mstatus).mie();
+            }
             spin();
             LOCK_OWNER.store(owner_id, Release);
-            status
+            mstatus as _
         }
     }
 
@@ -229,7 +234,10 @@ mod cs {
         if status != LOCK_OWNED {
             free();
             LOCK_OWNER.store(LOCK_UNOWNED, Release);
-            crate::interrupts::restore(status == 1)
+            if status == 1 {
+                // SAFETY: We won't break any critical sections where this is used
+                unsafe { riscv::interrupt::enable() }
+            }
         }
     }
 
@@ -335,7 +343,7 @@ pub mod executor {
 
         // We want to make sure we don't miss a MSWI between seeing the flag is false and wfi
         // We are not worried about doing an atomic CAS on the flag though
-        crate::interrupts::free(|| {
+        riscv::interrupt::free(|| {
             if SEV_FLAG[hart_id].load(Acquire) {
                 SEV_FLAG[hart_id].store(false, Relaxed);
             } else {
