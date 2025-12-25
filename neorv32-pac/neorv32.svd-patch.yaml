@@ -1,0 +1,7 @@
+_svd: "neorv32.svd"
+
+# Blanket delete interrupt tags since we treat them as Core Interrupts (in config.yml)
+"*":
+  _delete:
+    _interrupts:
+      - "*"
