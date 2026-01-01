@@ -2,9 +2,19 @@
 name = "embassy-neorv32"
 version = "0.1.0"
 edition = "2024"
+description = "Embassy Hardware Abstraction Layer (HAL) for the open-source NEORV32 RISC-V microcontroller"
 authors = ["Kurtis Dinelle <kurtis.dinelle@gmail.com>"]
 license = "MIT"
-repository = "https://github.com/kurtjd/embassy-neorv32"
+keywords = [
+    "embedded",
+    "risc-v",
+    "neorv32",
+    "hal",
+    "riscv32",
+    "no-std",
+    "embassy",
+]
+repository = "https://github.com/kurtjd/neorv32-rs"
 
 [features]
 default = ["time-driver", "rt"]
