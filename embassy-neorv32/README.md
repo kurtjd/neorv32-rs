@@ -6,14 +6,10 @@ RISC-V microcontroller and implements both blocking and async APIs/drivers for m
 Additionally, async and blocking traits from [embedded-hal](https://crates.io/crates/embedded-hal)
 are implemented where appropriate.
 
-## Overview
-NEORV32 is actively being developed and occasionally breaking changes are introduced (such as peripheral
-register interfaces changing). This HAL will try to keep up-to-date with these changes, but may not
-always support the latest and greatest.
+## Support
+The HAL currently supports the following peripherals and features:
 
-At this time, the HAL currently supports the following peripherals and features for NEORV32 `v1.12.6`:
-
-## Peripherals Currently Supported
+### Peripherals
 - SPI
 - TWI
 - GPIO
@@ -24,8 +20,11 @@ At this time, the HAL currently supports the following peripherals and features 
 - WDT
 - SYSINFO
 
-## Additional Features
+### Additional Features
 - Dual-core support
+- Embassy time-driver via CLINT `mtimer`
+
+Additional peripheral support and features may be added if there is community interest!
 
 ## Usage
 Please see the `examples` folder for ideas on how to use this HAL in your own projects.  
@@ -57,6 +56,10 @@ the `tick-hz` feature for `embassy-time` matches your configuration
 - Type: Ctrl+A Ctrl+S (send file)
 - Type: hello-world-fpga
 - For more help, see [bootloader](https://stnolting.github.io/neorv32/#_bootloader)
+
+## Version
+This HAL targets NEORV32 [v1.12.6](https://github.com/stnolting/neorv32/tree/v1.12.6).
+There is no guarantee it will work for different versions.
 
 ## References
 - [NEORV32 Datasheet](https://stnolting.github.io/neorv32/)
