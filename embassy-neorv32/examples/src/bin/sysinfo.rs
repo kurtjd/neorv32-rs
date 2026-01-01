@@ -29,8 +29,14 @@ async fn main(_spawner: embassy_executor::Spawner) {
     writeln!(&mut uart, "Boot mode: {}", SysInfo::boot_mode().as_str()).unwrap();
     writeln!(
         &mut uart,
-        "Bus timeout cycles: {}",
-        SysInfo::bus_timeout_cycles()
+        "Internal bus timeout cycles: {}",
+        SysInfo::bus_itmo_cycles()
+    )
+    .unwrap();
+    writeln!(
+        &mut uart,
+        "External bus timeout cycles: {}",
+        SysInfo::bus_etmo_cycles()
     )
     .unwrap();
 
@@ -122,5 +128,10 @@ async fn main(_spawner: embassy_executor::Spawner) {
     }
     if soc_config.cfs() {
         uart.blocking_write(b"CFS\n");
+    }
+
+    // Are we in a simulation?
+    if soc_config.simulation() {
+        uart.blocking_write(b"\nThe matrix has you.\n");
     }
 }

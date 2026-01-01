@@ -179,6 +179,11 @@ impl SocConfig {
     pub fn onewire(&self) -> bool {
         self.0 & (1 << 30) != 0
     }
+
+    /// Returns true if NEORV32 is being simulated.
+    pub fn simulation(&self) -> bool {
+        self.0 & (1 << 31) != 0
+    }
 }
 
 /// SysInfo Driver
@@ -205,15 +210,13 @@ impl SysInfo {
     /// Returns the IMEM size in bytes.
     #[inline(always)]
     pub fn imem_size() -> u32 {
-        // Read value is log2, so do inverse log for actual value
-        1 << reg().mem().read().sysinfo_misc_imem().bits() as u32
+        1 << reg().mem().read().sysinfo_misc_imem().bits()
     }
 
     /// Returns the DMEM size in bytes.
     #[inline(always)]
     pub fn dmem_size() -> u32 {
-        // Read value is log2, so do inverse log for actual value
-        1 << reg().mem().read().sysinfo_misc_dmem().bits() as u32
+        1 << reg().mem().read().sysinfo_misc_dmem().bits()
     }
 
     /// Returns the number of harts (cores).
@@ -229,10 +232,16 @@ impl SysInfo {
         BootMode::from(raw)
     }
 
-    /// Returns the number of bus timeout cycles.
+    /// Returns the number of internal bus timeout cycles.
     #[inline(always)]
-    pub fn bus_timeout_cycles() -> u8 {
-        reg().mem().read().sysinfo_misc_btmo().bits()
+    pub fn bus_itmo_cycles() -> u32 {
+        1 << reg().mem().read().sysinfo_misc_itmo().bits()
+    }
+
+    /// Returns the number of external bus timeout cycles.
+    #[inline(always)]
+    pub fn bus_etmo_cycles() -> u32 {
+        1 << reg().mem().read().sysinfo_misc_etmo().bits()
     }
 
     /// Returns the SoC config.

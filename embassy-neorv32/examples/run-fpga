@@ -7,11 +7,10 @@ BASE="../../../neorv32"
 rust-objcopy $1 -O binary "$1.bin"
 
 # Convert bin to fpga bootloader bin format neorv32 expects
-"$BASE/sw/image_gen/image_gen" -app_bin "$1.bin" "$1-fpga"
+"$BASE/sw/image_gen/image_gen" -i "$1.bin" -o "$1-fpga" -t app_bin
 
 # Make it easier to find binary in picocom by cd'ing to the correct folder it's in
 cd -- "$(dirname -- "$1")"
 
 # Connect to bootloader over serial using picocom
 sudo picocom /dev/ttyUSB0 -b 19200 --imap lfcrlf --omap crlf --send-cmd="ascii-xfr -s -n"
-

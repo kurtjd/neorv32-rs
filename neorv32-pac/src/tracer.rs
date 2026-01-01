@@ -17,12 +17,12 @@ impl RegisterBlock {
     pub const fn stop_addr(&self) -> &StopAddr {
         &self.stop_addr
     }
-    #[doc = "0x08 - Trace data: delta source address + trap-entry bit"]
+    #[doc = "0x08 - Trace data: delta source address + first-packet bit"]
     #[inline(always)]
     pub const fn delta_src(&self) -> &DeltaSrc {
         &self.delta_src
     }
-    #[doc = "0x0c - Trace data: delta destination address + frist-packet bit"]
+    #[doc = "0x0c - Trace data: delta destination address + trap-entry bit"]
     #[inline(always)]
     pub const fn delta_dst(&self) -> &DeltaDst {
         &self.delta_dst
@@ -38,13 +38,13 @@ pub mod ctrl;
 pub type StopAddr = crate::Reg<stop_addr::StopAddrSpec>;
 #[doc = "Stop tracing when reaching this address, set to all-zero to disable auto-stopping"]
 pub mod stop_addr;
-#[doc = "DELTA_SRC (r) register accessor: Trace data: delta source address + trap-entry bit\n\nYou can [`read`](crate::Reg::read) this register and get [`delta_src::R`]. See [API](https://docs.rs/svd2rust/#read--modify--write-api).\n\nFor information about available fields see [`mod@delta_src`] module"]
+#[doc = "DELTA_SRC (r) register accessor: Trace data: delta source address + first-packet bit\n\nYou can [`read`](crate::Reg::read) this register and get [`delta_src::R`]. See [API](https://docs.rs/svd2rust/#read--modify--write-api).\n\nFor information about available fields see [`mod@delta_src`] module"]
 #[doc(alias = "DELTA_SRC")]
 pub type DeltaSrc = crate::Reg<delta_src::DeltaSrcSpec>;
-#[doc = "Trace data: delta source address + trap-entry bit"]
+#[doc = "Trace data: delta source address + first-packet bit"]
 pub mod delta_src;
-#[doc = "DELTA_DST (r) register accessor: Trace data: delta destination address + frist-packet bit\n\nYou can [`read`](crate::Reg::read) this register and get [`delta_dst::R`]. See [API](https://docs.rs/svd2rust/#read--modify--write-api).\n\nFor information about available fields see [`mod@delta_dst`] module"]
+#[doc = "DELTA_DST (r) register accessor: Trace data: delta destination address + trap-entry bit\n\nYou can [`read`](crate::Reg::read) this register and get [`delta_dst::R`]. See [API](https://docs.rs/svd2rust/#read--modify--write-api).\n\n<div class=\"warning\">The register is <b>modified</b> in some way after a read operation.</div>\n\nFor information about available fields see [`mod@delta_dst`] module"]
 #[doc(alias = "DELTA_DST")]
 pub type DeltaDst = crate::Reg<delta_dst::DeltaDstSpec>;
-#[doc = "Trace data: delta destination address + frist-packet bit"]
+#[doc = "Trace data: delta destination address + trap-entry bit"]
 pub mod delta_dst;

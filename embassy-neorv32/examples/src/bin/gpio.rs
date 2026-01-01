@@ -1,5 +1,9 @@
 #![no_std]
 #![no_main]
+
+#[cfg(feature = "sim")]
+compile_error!("GPIO example not available in simulation.");
+
 use embassy_neorv32::bind_interrupts;
 use embassy_neorv32::gpio::{self, Gpio};
 use embassy_neorv32::peripherals;

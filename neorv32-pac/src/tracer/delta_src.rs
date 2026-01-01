@@ -5,7 +5,7 @@ impl core::fmt::Debug for R {
         write!(f, "{}", self.bits())
     }
 }
-#[doc = "Trace data: delta source address + trap-entry bit\n\nYou can [`read`](crate::Reg::read) this register and get [`delta_src::R`](R). See [API](https://docs.rs/svd2rust/#read--modify--write-api)."]
+#[doc = "Trace data: delta source address + first-packet bit\n\nYou can [`read`](crate::Reg::read) this register and get [`delta_src::R`](R). See [API](https://docs.rs/svd2rust/#read--modify--write-api)."]
 pub struct DeltaSrcSpec;
 impl crate::RegisterSpec for DeltaSrcSpec {
     type Ux = u32;

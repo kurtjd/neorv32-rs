@@ -3,7 +3,6 @@ pub mod dma;
 #[cfg(feature = "dual-core")]
 pub mod dualcore;
 pub mod gpio;
-pub mod gptmr;
 pub mod interrupts;
 pub mod pwm;
 pub mod spi;
@@ -18,12 +17,27 @@ pub mod wdt;
 // Peripherals and interrupts supported by the NEORV32 chip
 mod chip {
     pub use neorv32_pac as pac;
+
+    #[rustfmt::skip]
     embassy_hal_internal::peripherals!(
-        HART1, CLINT, WDT, UART0, UART1, GPTMR, TRNG, DMA, GPIO, PORT0, PORT1, PORT2, PORT3, PORT4,
-        PORT5, PORT6, PORT7, PORT8, PORT9, PORT10, PORT11, PORT12, PORT13, PORT14, PORT15, PORT16,
-        PORT17, PORT18, PORT19, PORT20, PORT21, PORT22, PORT23, PORT24, PORT25, PORT26, PORT27,
-        PORT28, PORT29, PORT30, PORT31, PWM0, PWM1, PWM2, PWM3, PWM4, PWM5, PWM6, PWM7, PWM8, PWM9,
-        PWM10, PWM11, PWM12, PWM13, PWM14, PWM15, SPI, TWI,
+        HART1,
+        CLINT,
+        WDT,
+        UART0, UART1,
+        TRNG,
+        DMA,
+        SPI,
+        TWI,
+        GPIO,
+        PORT0, PORT1, PORT2, PORT3, PORT4, PORT5, PORT6, PORT7,
+        PORT8, PORT9, PORT10, PORT11, PORT12, PORT13, PORT14, PORT15,
+        PORT16, PORT17, PORT18, PORT19, PORT20, PORT21, PORT22, PORT23,
+        PORT24, PORT25, PORT26, PORT27, PORT28, PORT29, PORT30, PORT31,
+        PWM,
+        PWMCHAN0, PWMCHAN1, PWMCHAN2, PWMCHAN3, PWMCHAN4, PWMCHAN5, PWMCHAN6, PWMCHAN7,
+        PWMCHAN8, PWMCHAN9, PWMCHAN10, PWMCHAN11, PWMCHAN12, PWMCHAN13, PWMCHAN14, PWMCHAN15,
+        PWMCHAN16, PWMCHAN17, PWMCHAN18, PWMCHAN19, PWMCHAN20, PWMCHAN21, PWMCHAN22, PWMCHAN23,
+        PWMCHAN24, PWMCHAN25, PWMCHAN26, PWMCHAN27, PWMCHAN28, PWMCHAN29, PWMCHAN30, PWMCHAN31,
     );
     pub mod interrupts {
         crate::interrupt_mod!(UART0, UART1, TRNG, DMA, GPIO, SPI);

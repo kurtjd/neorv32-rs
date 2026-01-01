@@ -16,7 +16,7 @@ async fn main(_spawner: embassy_executor::Spawner) {
 
     // Setup WDT with timeout of 1ms and enable it then lock it
     let wdt = Wdt::new(p.WDT);
-    wdt.set_timeout_ms(ms_to_us(1000) as u32);
+    wdt.set_timeout_ms(1);
     wdt.enable();
     let wdt = wdt.lock();
 
@@ -36,10 +36,10 @@ async fn main(_spawner: embassy_executor::Spawner) {
     }
 
     // On subsequent resets we feed a few times then wait for timeout reset to trigger
-    for _ in 0..10 {
+    for _ in 0..5 {
         uart.blocking_write(b"Feeding watchdog...\n");
         wdt.feed();
-        Timer::after_micros(ms_to_us(500)).await;
+        Timer::after_micros(ms_to_us(1)).await;
     }
     uart.blocking_write(b"Waiting for watchdog timeout...\n");
 }

@@ -1,5 +1,9 @@
 #![no_std]
 #![no_main]
+
+#[cfg(feature = "sim")]
+compile_error!("TWI example not available in simulation.");
+
 use core::fmt::Write;
 use embassy_neorv32::twi::Twi;
 use embassy_neorv32::uart::UartTx;

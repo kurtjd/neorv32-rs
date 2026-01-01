@@ -11,7 +11,7 @@ NEORV32 is actively being developed and occasionally breaking changes are introd
 register interfaces changing). This HAL will try to keep up-to-date with these changes, but may not
 always support the latest and greatest.
 
-At this time, the HAL currently supports the following peripherals and features for NEORV32 `v1.12.1`:
+At this time, the HAL currently supports the following peripherals and features for NEORV32 `v1.12.6`:
 
 ## Peripherals Currently Supported
 - SPI
@@ -22,7 +22,6 @@ At this time, the HAL currently supports the following peripherals and features 
 - PWM
 - TRNG
 - WDT
-- GPTMR
 - SYSINFO
 
 ## Additional Features
@@ -38,7 +37,7 @@ To run these examples, follow these steps:
 - Modify `examples/Cargo.toml` features `sim` and `fpga` such that
 the `tick-hz` feature for `embassy-time` matches your configuration
 - Modify `UART_BAUD` in `examples/src/lib.rs` to match your host UART
-- Clone [neorv32 v1.12.1](https://github.com/stnolting/neorv32/tree/v1.12.1)
+- Clone [neorv32 v1.12.6](https://github.com/stnolting/neorv32/tree/v1.12.6)
 - Continue with one of the series of steps below depending on if running in simulation or on FPGA
 
 ### Simulation

@@ -21,7 +21,7 @@ impl RegisterBlock {
 pub type Ctrl = crate::Reg<ctrl::CtrlSpec>;
 #[doc = "Control and data register"]
 pub mod ctrl;
-#[doc = "DATA (rw) register accessor: Random data\n\nYou can [`read`](crate::Reg::read) this register and get [`data::R`]. You can [`reset`](crate::Reg::reset), [`write`](crate::Reg::write), [`write_with_zero`](crate::Reg::write_with_zero) this register using [`data::W`]. You can also [`modify`](crate::Reg::modify) this register. See [API](https://docs.rs/svd2rust/#read--modify--write-api).\n\n<div class=\"warning\">The register is <b>modified</b> in some way after a read operation.</div>\n\nFor information about available fields see [`mod@data`] module"]
+#[doc = "DATA (r) register accessor: Random data\n\nYou can [`read`](crate::Reg::read) this register and get [`data::R`]. See [API](https://docs.rs/svd2rust/#read--modify--write-api).\n\n<div class=\"warning\">The register is <b>modified</b> in some way after a read operation.</div>\n\nFor information about available fields see [`mod@data`] module"]
 #[doc(alias = "DATA")]
 pub type Data = crate::Reg<data::DataSpec>;
 #[doc = "Random data"]

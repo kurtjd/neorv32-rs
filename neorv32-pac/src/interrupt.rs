@@ -155,38 +155,3 @@ pub fn try_cause() -> riscv::result::Result<Trap> {
 pub fn cause() -> Trap {
     try_cause().unwrap()
 }
-#[doc = r" External interrupts. These interrupts are handled by the external peripherals."]
-# [riscv :: pac_enum (unsafe ExternalInterruptNumber)]
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ExternalInterrupt {
-    #[doc = "0 - TWD_FIRQ"]
-    TWD_FIRQ = 0,
-    #[doc = "1 - CFS_FIRQ"]
-    CFS_FIRQ = 1,
-    #[doc = "2 - UART0_FIRQ"]
-    UART0_FIRQ = 2,
-    #[doc = "3 - UART1_FIRQ"]
-    UART1_FIRQ = 3,
-    #[doc = "5 - TRACER_FIRQ"]
-    TRACER_FIRQ = 5,
-    #[doc = "6 - SPI_FIRQ"]
-    SPI_FIRQ = 6,
-    #[doc = "7 - TWI_FIRQ"]
-    TWI_FIRQ = 7,
-    #[doc = "8 - GPIO_FIRQ"]
-    GPIO_FIRQ = 8,
-    #[doc = "9 - NEOLED_FIRQ"]
-    NEOLED_FIRQ = 9,
-    #[doc = "10 - DMA_FIRQ"]
-    DMA_FIRQ = 10,
-    #[doc = "11 - SDI_FIRQ"]
-    SDI_FIRQ = 11,
-    #[doc = "12 - GPTMR_FIRQ"]
-    GPTMR_FIRQ = 12,
-    #[doc = "13 - ONEWIRE_FIRQ"]
-    ONEWIRE_FIRQ = 13,
-    #[doc = "14 - SLINK_FIRQ"]
-    SLINK_FIRQ = 14,
-    #[doc = "15 - TRNG_FIRQ"]
-    TRNG_FIRQ = 15,
-}

@@ -4,13 +4,13 @@
 BASE="../../../neorv32"
 
 # image_gen says it takes ELF but really seems to need raw bin? so convert.
-rust-objcopy $1 -O binary $1
+rust-objcopy $1 -O binary "$1.bin"
 
 # `image_gen` seems to require bin be padded to nearest 4 byte
-truncate -s $(( (($(stat -c%s $1)+3)/4)*4 )) $1
+truncate -s $(( (($(stat -c%s "$1.bin")+3)/4)*4 )) "$1.bin"
 
 # Generate the VHD image then place it in neorv32 core
-"$BASE/sw/image_gen/image_gen" -app_vhd $1 neorv32_application_image.vhd
+"$BASE/sw/image_gen/image_gen" -i "$1.bin" -o neorv32_application_image.vhd -t app_vhd
 mv neorv32_application_image.vhd "$BASE/rtl/core"
 
 # Run neorv32 sim script

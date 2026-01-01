@@ -54,6 +54,8 @@ pub type SysinfoSocIoGptmrR = crate::BitReader;
 pub type SysinfoSocIoSlinkR = crate::BitReader;
 #[doc = "Field `SYSINFO_SOC_IO_ONEWIRE` reader - 1-wire interface controller implemented"]
 pub type SysinfoSocIoOnewireR = crate::BitReader;
+#[doc = "Field `SYSINFO_SOC_SIM` reader - Set if this is a simulation"]
+pub type SysinfoSocSimR = crate::BitReader;
 impl R {
     #[doc = "Bit 0 - Bootloader implemented"]
     #[inline(always)]
@@ -189,6 +191,11 @@ impl R {
     #[inline(always)]
     pub fn sysinfo_soc_io_onewire(&self) -> SysinfoSocIoOnewireR {
         SysinfoSocIoOnewireR::new(((self.bits >> 30) & 1) != 0)
+    }
+    #[doc = "Bit 31 - Set if this is a simulation"]
+    #[inline(always)]
+    pub fn sysinfo_soc_sim(&self) -> SysinfoSocSimR {
+        SysinfoSocSimR::new(((self.bits >> 31) & 1) != 0)
     }
 }
 #[doc = "SoC configuration\n\nYou can [`read`](crate::Reg::read) this register and get [`soc::R`](R). See [API](https://docs.rs/svd2rust/#read--modify--write-api)."]
