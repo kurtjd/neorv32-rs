@@ -1,3 +1,5 @@
+//! Peripheral interrupts
+
 /// Macro to bind interrupts to handlers.
 ///
 /// This defines the right interrupt handlers, and creates a unit struct (like `struct Irqs;`)
@@ -41,7 +43,7 @@ macro_rules! bind_interrupts {
 #[macro_export]
 macro_rules! interrupt_mod {
     ($($irqs:ident),* $(,)?) => {
-        /// Interrupt definitions.
+        /// Interrupt definitions
         pub mod interrupt {
             pub use $crate::pac::interrupt::CoreInterrupt;
 
