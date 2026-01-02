@@ -22,12 +22,7 @@ async fn main(_spawner: embassy_executor::Spawner) {
 
     // Print the last reset cause
     let reset_cause = wdt.reset_cause();
-    writeln!(
-        &mut uart,
-        "Last hardware reset cause: {}",
-        reset_cause.as_str()
-    )
-    .unwrap();
+    writeln!(&mut uart, "Last hardware reset cause: {:?}", reset_cause).unwrap();
 
     // On first reset, let's see if illegal access triggers a reset
     if matches!(reset_cause, ResetCause::External) {

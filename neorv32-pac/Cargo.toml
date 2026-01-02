@@ -5,15 +5,7 @@ edition = "2024"
 description = "Peripheral Access Crate (PAC) for the open-source NEORV32 RISC-V microcontroller"
 authors = ["Kurtis Dinelle <kurtis.dinelle@gmail.com>"]
 license = "MIT"
-keywords = [
-    "embedded",
-    "risc-v",
-    "neorv32",
-    "pac",
-    "riscv32",
-    "no-std",
-    "embassy",
-]
+keywords = ["embedded", "risc-v", "neorv32", "pac", "no-std"]
 repository = "https://github.com/kurtjd/neorv32-rs"
 
 [dependencies]

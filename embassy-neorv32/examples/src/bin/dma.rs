@@ -16,11 +16,11 @@ bind_interrupts!(struct Irqs {
     UART0 => uart::InterruptHandler<peripherals::UART0>;
 });
 
-type UartMutex = Mutex<CriticalSectionRawMutex, UartTx<'static, uart::Async>>;
-static UART: OnceLock<UartMutex> = OnceLock::new();
+type SharedUart = Mutex<CriticalSectionRawMutex, UartTx<'static, uart::Async>>;
+static UART: OnceLock<SharedUart> = OnceLock::new();
 
 #[embassy_executor::task]
-async fn dma_transfer(mut dma: Dma<'static>, uart: &'static UartMutex) {
+async fn dma_transfer(mut dma: Dma<'static>, uart: &'static SharedUart) {
     loop {
         let src = [42u8; 1024];
         let mut dst = [69u8; 1024];

@@ -14,7 +14,7 @@ use embassy_sync::mutex::Mutex;
 use embassy_sync::once_lock::OnceLock;
 use embassy_time::Timer;
 
-type UartMutex = Mutex<CriticalSectionRawMutex, UartTx<'static, uart::Async>>;
+type SharedUart = Mutex<CriticalSectionRawMutex, UartTx<'static, uart::Async>>;
 
 bind_interrupts!(struct Irqs {
     GPIO => gpio::InterruptHandler<peripherals::GPIO>;
@@ -24,7 +24,7 @@ bind_interrupts!(struct Irqs {
 #[embassy_executor::task(pool_size = 2)]
 async fn input_task(
     mut input_pin: gpio::Input<'static, gpio::Async>,
-    uart: &'static UartMutex,
+    uart: &'static SharedUart,
     msg: &'static [u8],
 ) {
     loop {
@@ -45,7 +45,7 @@ async fn output_task(mut output_pin: gpio::Output<'static>, ms: u64) {
 async fn main(spawner: embassy_executor::Spawner) {
     let p = embassy_neorv32::init();
 
-    static UART: OnceLock<UartMutex> = OnceLock::new();
+    static UART: OnceLock<SharedUart> = OnceLock::new();
     let uart = UartTx::new_async(p.UART0, UART_BAUD, UART_IS_SIM, false, Irqs);
     let uart = UART.get_or_init(|| Mutex::new(uart));
 

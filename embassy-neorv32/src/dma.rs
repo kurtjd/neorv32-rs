@@ -8,6 +8,7 @@ use core::task::{Context, Poll};
 use embassy_hal_internal::{Peri, PeripheralType};
 use embassy_sync::waitqueue::AtomicWaker;
 
+/// DMA interrupt handler binding.
 pub struct InterruptHandler<T: Instance> {
     _phantom: PhantomData<T>,
 }
@@ -26,6 +27,8 @@ impl<T: Instance> Handler<T::Interrupt> for InterruptHandler<T> {
 }
 
 /// DMA error.
+#[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum Error {
     /// Indicates a bus error occurred during transfer.
     BusError,
@@ -104,6 +107,9 @@ pub struct Dma<'d> {
     err_flag: &'static AtomicBool,
     _phantom: PhantomData<&'d ()>,
 }
+
+// Allows for use in a Mutex (to share safely between harts and tasks)
+unsafe impl<'d> Send for Dma<'d> {}
 
 impl<'d> Dma<'d> {
     /// Creates a new instance of a DMA driver.

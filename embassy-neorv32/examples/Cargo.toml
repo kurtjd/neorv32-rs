@@ -28,7 +28,7 @@ sim = ["embassy-time/tick-hz-100_000_000"]
 
 [dependencies]
 # Embassy support
-embassy-neorv32 = { path = "../" }
+embassy-neorv32 = { version = "0.1.0", path = "../" }
 embassy-time = { version = "0.5.0" }
 embassy-executor = { version = "0.9.1", features = ["executor-thread"] }
 embassy-sync = "0.7.2"

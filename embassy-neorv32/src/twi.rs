@@ -1,4 +1,9 @@
 //! Two-Wire Interface (TWI)
+//!
+//! **Note**: Unfortunately NEORV32's implementation for TWI in hardware appears problematic
+//! and makes it difficult to write a driver for it. Specifically, receiving bytes from a device
+//! is pretty odd and there is no interrupt for byte received, so an async version of this
+//! driver doesn't seem possible and is not provided.
 use crate::peripherals::TWI;
 use core::marker::PhantomData;
 use embassy_hal_internal::{Peri, PeripheralType};
@@ -7,7 +12,6 @@ pub use embedded_hal_1::i2c::Operation;
 // A hack/workaround for master ACKs (see `read_byte`)
 const HI_Z: u8 = 0xFF;
 
-#[derive(Clone, Copy)]
 enum Command {
     _Nop,
     Start,
@@ -26,7 +30,6 @@ impl From<Command> for u8 {
     }
 }
 
-#[derive(Clone, Copy)]
 enum Mack {
     Ack,
     Nack,
@@ -56,8 +59,9 @@ impl From<Rw> for u8 {
     }
 }
 
+/// TWI Error.
 #[derive(Clone, Copy, Debug)]
-#[cfg_attr(feature = "defmt", attr = defmt::Format)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum Error {
     /// Device failed to ack address.
     NackAddr,
@@ -65,10 +69,14 @@ pub enum Error {
     NackData,
 }
 
+/// Two-Wire Interface (TWI) Driver.
 pub struct Twi<'d, M: IoMode> {
     reg: &'static crate::pac::twi::RegisterBlock,
     _phantom: PhantomData<&'d M>,
 }
+
+// Allows for use in a Mutex (to share safely between harts and tasks)
+unsafe impl<'d, M: IoMode> Send for Twi<'d, M> {}
 
 impl<'d, M: IoMode> Twi<'d, M> {
     fn tx_full(&self) -> bool {

@@ -42,10 +42,11 @@ async fn print_logo(uart: &mut UartTx<'static, uart::Async>) {
 async fn main(_spawner: embassy_executor::Spawner) {
     let p = embassy_neorv32::init();
 
-    // Setup UART in regular (non-simulated) mode with no HW flow control and baud rate of 19200
+    // Setup UART with no HW flow control
     let mut uart = UartTx::new_async(p.UART0, UART_BAUD, UART_IS_SIM, false, Irqs);
     print_logo(&mut uart).await;
 
     // Note: '\n' seems necessary for UART writes for sim to flush output
+    // Note 2: Now as of v.12.6 UART TX doesn't seem to flush at all until simulation reaches its stop-time :(
     uart.write(b"Hello world! :)\n").await;
 }

@@ -1,12 +1,14 @@
 //! SysInfo
 
-// As this is a read-only peripheral (with the exception of set mainclk freq, which we mark as unsafe),
-// this driver is designed to be free-standing for ease of use.
+// As this is a read-only peripheral this driver is designed to be free-standing for ease of use
 fn reg() -> &'static crate::pac::sysinfo::RegisterBlock {
+    // SAFETY: We only use this pointer internally and do so safely
     unsafe { &*crate::pac::Sysinfo::ptr() }
 }
 
 /// Processor boot mode.
+#[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum BootMode {
     Bootloader,
     CustomAddress,
@@ -38,6 +40,8 @@ impl From<u8> for BootMode {
 }
 
 /// SoC Configuration.
+#[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct SocConfig(u32);
 impl SocConfig {
     /// Returns raw 32-bit SoC config.
@@ -187,59 +191,43 @@ impl SocConfig {
 }
 
 /// SysInfo Driver
+#[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct SysInfo;
 
 impl SysInfo {
     /// Returns the main CPU clock frequency (Hz).
-    #[inline(always)]
     pub fn clock_freq() -> u32 {
         reg().clk().read().bits()
     }
 
-    /// Sets the main CPU clock frequency (Hz).
-    ///
-    /// # Safety
-    /// The caller must ensure no other code is assuming a static main clock frequency.
-    ///
-    /// For example, this WILL break the `time-driver` which assumes a static clock.
-    #[inline(always)]
-    pub unsafe fn set_clock_freq(freq_hz: u32) {
-        reg().clk().write(|w| unsafe { w.bits(freq_hz) });
-    }
-
     /// Returns the IMEM size in bytes.
-    #[inline(always)]
     pub fn imem_size() -> u32 {
         1 << reg().mem().read().sysinfo_misc_imem().bits()
     }
 
     /// Returns the DMEM size in bytes.
-    #[inline(always)]
     pub fn dmem_size() -> u32 {
         1 << reg().mem().read().sysinfo_misc_dmem().bits()
     }
 
     /// Returns the number of harts (cores).
-    #[inline(always)]
     pub fn num_harts() -> u8 {
         reg().mem().read().sysinfo_misc_hart().bits()
     }
 
     /// Returns the boot mode configuration.
-    #[inline(always)]
     pub fn boot_mode() -> BootMode {
         let raw = reg().mem().read().sysinfo_misc_boot().bits();
         BootMode::from(raw)
     }
 
     /// Returns the number of internal bus timeout cycles.
-    #[inline(always)]
     pub fn bus_itmo_cycles() -> u32 {
         1 << reg().mem().read().sysinfo_misc_itmo().bits()
     }
 
     /// Returns the number of external bus timeout cycles.
-    #[inline(always)]
     pub fn bus_etmo_cycles() -> u32 {
         1 << reg().mem().read().sysinfo_misc_etmo().bits()
     }
@@ -247,7 +235,6 @@ impl SysInfo {
     /// Returns the SoC config.
     ///
     /// Additional methods can be called to check if SoC features are implemented.
-    #[inline(always)]
     pub fn soc_config() -> SocConfig {
         SocConfig(reg().soc().read().bits())
     }

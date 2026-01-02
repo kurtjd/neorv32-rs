@@ -23,15 +23,13 @@ async fn main(_spawner: embassy_executor::Spawner) {
     let mut uart = UartTx::new_blocking(p.UART0, UART_BAUD, UART_IS_SIM, false);
 
     // Setup TWI with frequency of 100 kHz and clock stretching enabled
+    // **Note**: For hardware reasons, unfortuantely an async TWI driver is not available
     let twi = Twi::new_blocking(p.TWI, 100_000, true);
 
     // Setup and enable LM75 driver
     let address = Address::from(LM75_ALL_GND);
     let mut sensor = Lm75::new(twi, address);
-    if sensor.enable().is_err() {
-        uart.blocking_write(b"Error enabling LM75\n");
-        panic!()
-    }
+    sensor.enable().expect("Error enabling LM75");
 
     // Periodically read temperature from LM75 over TWI
     loop {

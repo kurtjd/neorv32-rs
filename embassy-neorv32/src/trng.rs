@@ -28,6 +28,9 @@ pub struct Trng<'d, M: ReadMode> {
     _phantom: PhantomData<&'d M>,
 }
 
+// Allows for use in a Mutex (to share safely between harts and tasks)
+unsafe impl<'d, M: ReadMode> Send for Trng<'d, M> {}
+
 impl<'d, M: ReadMode> Trng<'d, M> {
     fn new_inner<T: Instance>(_instance: Peri<'d, T>) -> Self {
         // Enable TRNG
@@ -151,6 +154,7 @@ pub trait Instance: SealedInstance + PeripheralType {
 }
 impl SealedInstance for TRNG {
     fn reg() -> &'static crate::pac::trng::RegisterBlock {
+        // SAFETY: This ptr is only used internally and we ensure its used safely
         unsafe { &*crate::pac::Trng::ptr() }
     }
 

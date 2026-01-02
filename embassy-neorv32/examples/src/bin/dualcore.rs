@@ -1,5 +1,11 @@
+//! To run this example, use:
+//! `cargo run-dc-sim --release --bin dualcore`
 #![no_std]
 #![no_main]
+
+#[cfg(not(feature = "dual-core"))]
+compile_error!("The `dual-core` feature must be enabled.");
+
 use core::fmt::Write;
 use embassy_neorv32::dualcore;
 use embassy_neorv32::trng::{self, Trng};
@@ -11,9 +17,6 @@ use embassy_sync::channel::Channel;
 use embassy_sync::mutex::Mutex;
 use embassy_sync::once_lock::OnceLock;
 use embassy_time::Timer;
-
-#[cfg(not(feature = "dual-core"))]
-compile_error!("The `dual-core` feature must be enabled.");
 
 bind_interrupts!(struct Irqs {
     TRNG => trng::InterruptHandler<peripherals::TRNG>;
@@ -49,6 +52,8 @@ async fn hart1_task(uart: &'static SharedUart, mut trng: Trng<'static, trng::Asy
     }
 }
 
+// Dual-core support requires a custom Embassy executor (provided by the HAL), so we just need to use it here
+// We have to then also explicitly state we want to use the riscv-rt entry
 #[embassy_executor::main(executor = "dualcore::executor::Executor", entry = "riscv_rt::entry")]
 async fn main(spawner: embassy_executor::Spawner) {
     let p = embassy_neorv32::init();

@@ -251,6 +251,9 @@ pub struct UartRx<'d, M: IoMode> {
     _phantom: PhantomData<&'d M>,
 }
 
+// Allows for use in a Mutex (to share safely between harts and tasks)
+unsafe impl<'d, M: IoMode> Send for UartRx<'d, M> {}
+
 impl<'d, M: IoMode> UartRx<'d, M> {
     fn new_inner<T: Instance>() -> Self {
         // Mark RX as active
@@ -381,7 +384,7 @@ pub struct UartTx<'d, M: IoMode> {
     _phantom: PhantomData<&'d M>,
 }
 
-// Revisit: Soundness of this?
+// Allows for use in a Mutex (to share safely between harts and tasks)
 unsafe impl<'d, M: IoMode> Send for UartTx<'d, M> {}
 
 impl<'d, M: IoMode> UartTx<'d, M> {

@@ -3,9 +3,9 @@
 //! This module provides a function for starting hart 1 and all the additional neccessary functionality
 //! to safely support that (such as a custom executor and critical section).
 //!
-//! I still have open questions on the safety of Sending instantiated peripherals to the other hart,
+//! There are still open questions on the safety of Sending instantiated peripherals to the other hart,
 //! (mainly due to interrupts being hart local) which I need to investigate more, so to be on the safe
-//! side, for now it is recommend that peripherals are only instantiated in the hart they will be used
+//! side, for now it is recommended that peripherals are only instantiated in the hart they will be used
 //! and not moved.
 //!
 //! Ensure the `dual-core` feature is enabled to use this.
@@ -153,7 +153,6 @@ mod ihc {
         ihc::clint().mswi().msip_mhartid().unpend();
     }
 
-    #[inline(always)]
     fn clint() -> pac::Clint {
         // SAFETY: We are the only users of clint and guarantee its safe use
         unsafe { pac::Clint::steal() }
@@ -175,19 +174,16 @@ mod ihc {
         })
     }
 
-    #[inline(always)]
     pub(super) fn wake(hart: Hart) {
         clint().mswi().msip(hart).pend();
     }
 
-    #[inline(always)]
     pub(super) fn send(hart: Hart, val: u64) {
         // We treat hart 1's mtimecmp reg as a convenient 'mailbox' since it is unused
         clint().mtimecmp1().write(val);
         wake(hart);
     }
 
-    #[inline(always)]
     pub(super) fn recv() -> u64 {
         clint().mtimecmp1().read()
     }
@@ -203,7 +199,6 @@ mod cs {
     const LOCK_OWNED: u8 = 2;
     static LOCK_OWNER: AtomicU8 = AtomicU8::new(LOCK_UNOWNED);
 
-    #[inline(always)]
     fn acquire(spin: impl Fn()) -> u8 {
         // Hart 0 -> 1, Hart 1 -> 2
         let owner_id = ihc::whoami().number() as u8 + 1;
@@ -227,7 +222,6 @@ mod cs {
         }
     }
 
-    #[inline(always)]
     fn release(status: u8, free: impl Fn()) {
         // Only free the lock if we are calling release for the outer most cs
         // (as in, a nested cs should do nothing here since it didn't need to acquire the lock)
@@ -320,7 +314,6 @@ pub mod executor {
     static SEV_FLAG: [AtomicBool; NHARTS] = [const { AtomicBool::new(false) }; NHARTS];
 
     // Emulates a SEV by setting a flag for each hart and waking the other hart via MSWI
-    #[inline(always)]
     fn sev() {
         for sev_flag in &SEV_FLAG {
             sev_flag.store(true, Release);
@@ -337,7 +330,6 @@ pub mod executor {
     }
 
     // Emulates a WFE by checking if flag is set before deciding to go to sleep
-    #[inline(always)]
     fn wfe() {
         let hart_id = ihc::whoami().number();
 

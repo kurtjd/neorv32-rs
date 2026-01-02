@@ -16,8 +16,6 @@ pub mod wdt;
 
 // Peripherals and interrupts supported by the NEORV32 chip
 mod chip {
-    pub use neorv32_pac as pac;
-
     #[rustfmt::skip]
     embassy_hal_internal::peripherals!(
         HART1,
@@ -44,8 +42,8 @@ mod chip {
     }
 }
 
-pub use chip::pac;
 pub use chip::{Peripherals, interrupts::*, peripherals};
+pub use neorv32_pac as pac;
 
 /// Initialize the HAL. This must only be called from hart 0.
 ///

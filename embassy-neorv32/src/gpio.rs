@@ -204,6 +204,9 @@ pub struct Input<'d, M: IoMode> {
     _phantom: PhantomData<&'d M>,
 }
 
+// Allows for use in a Mutex (to share safely between harts and tasks)
+unsafe impl<'d, M: IoMode> Send for Input<'d, M> {}
+
 impl<'d, M: IoMode> Input<'d, M> {
     fn new(
         port: u32,
@@ -360,6 +363,9 @@ pub struct Output<'d> {
     _phantom: PhantomData<&'d ()>,
 }
 
+// Allows for use in a Mutex (to share safely between harts and tasks)
+unsafe impl<'d> Send for Output<'d> {}
+
 impl<'d> Output<'d> {
     fn new(port: u32, reg: &'static crate::pac::gpio::RegisterBlock) -> Self {
         Self {
@@ -504,12 +510,10 @@ impl_port!(PORT31, 31);
 impl<'d, M: IoMode> embedded_hal_02::digital::v2::InputPin for Port<'d, M> {
     type Error = Infallible;
 
-    #[inline]
     fn is_high(&self) -> Result<bool, Self::Error> {
         Ok(self.is_high())
     }
 
-    #[inline]
     fn is_low(&self) -> Result<bool, Self::Error> {
         Ok(self.is_high())
     }
@@ -518,13 +522,11 @@ impl<'d, M: IoMode> embedded_hal_02::digital::v2::InputPin for Port<'d, M> {
 impl<'d, M: IoMode> embedded_hal_02::digital::v2::OutputPin for Port<'d, M> {
     type Error = Infallible;
 
-    #[inline]
     fn set_high(&mut self) -> Result<(), Self::Error> {
         self.set_high();
         Ok(())
     }
 
-    #[inline]
     fn set_low(&mut self) -> Result<(), Self::Error> {
         self.set_low();
         Ok(())
@@ -532,12 +534,10 @@ impl<'d, M: IoMode> embedded_hal_02::digital::v2::OutputPin for Port<'d, M> {
 }
 
 impl<'d, M: IoMode> embedded_hal_02::digital::v2::StatefulOutputPin for Port<'d, M> {
-    #[inline]
     fn is_set_high(&self) -> Result<bool, Self::Error> {
         Ok(self.is_set_high())
     }
 
-    #[inline]
     fn is_set_low(&self) -> Result<bool, Self::Error> {
         Ok(self.is_set_low())
     }
@@ -546,7 +546,6 @@ impl<'d, M: IoMode> embedded_hal_02::digital::v2::StatefulOutputPin for Port<'d,
 impl<'d, M: IoMode> embedded_hal_02::digital::v2::ToggleableOutputPin for Port<'d, M> {
     type Error = Infallible;
 
-    #[inline]
     fn toggle(&mut self) -> Result<(), Self::Error> {
         self.toggle();
         Ok(())
@@ -556,12 +555,10 @@ impl<'d, M: IoMode> embedded_hal_02::digital::v2::ToggleableOutputPin for Port<'
 impl<'d, M: IoMode> embedded_hal_02::digital::v2::InputPin for Input<'d, M> {
     type Error = Infallible;
 
-    #[inline]
     fn is_high(&self) -> Result<bool, Self::Error> {
         Ok(self.is_high())
     }
 
-    #[inline]
     fn is_low(&self) -> Result<bool, Self::Error> {
         Ok(self.is_high())
     }
@@ -570,13 +567,11 @@ impl<'d, M: IoMode> embedded_hal_02::digital::v2::InputPin for Input<'d, M> {
 impl<'d> embedded_hal_02::digital::v2::OutputPin for Output<'d> {
     type Error = Infallible;
 
-    #[inline]
     fn set_high(&mut self) -> Result<(), Self::Error> {
         self.set_high();
         Ok(())
     }
 
-    #[inline]
     fn set_low(&mut self) -> Result<(), Self::Error> {
         self.set_low();
         Ok(())
@@ -584,12 +579,10 @@ impl<'d> embedded_hal_02::digital::v2::OutputPin for Output<'d> {
 }
 
 impl<'d> embedded_hal_02::digital::v2::StatefulOutputPin for Output<'d> {
-    #[inline]
     fn is_set_high(&self) -> Result<bool, Self::Error> {
         Ok(self.is_set_high())
     }
 
-    #[inline]
     fn is_set_low(&self) -> Result<bool, Self::Error> {
         Ok(self.is_set_low())
     }
@@ -598,7 +591,6 @@ impl<'d> embedded_hal_02::digital::v2::StatefulOutputPin for Output<'d> {
 impl<'d> embedded_hal_02::digital::v2::ToggleableOutputPin for Output<'d> {
     type Error = Infallible;
 
-    #[inline]
     fn toggle(&mut self) -> Result<(), Self::Error> {
         self.toggle();
         Ok(())
@@ -610,25 +602,21 @@ impl<'d, M: IoMode> embedded_hal_1::digital::ErrorType for Port<'d, M> {
 }
 
 impl<'d, M: IoMode> embedded_hal_1::digital::InputPin for Port<'d, M> {
-    #[inline]
     fn is_high(&mut self) -> Result<bool, Self::Error> {
         Ok((*self).is_high())
     }
 
-    #[inline]
     fn is_low(&mut self) -> Result<bool, Self::Error> {
         Ok((*self).is_low())
     }
 }
 
 impl<'d, M: IoMode> embedded_hal_1::digital::OutputPin for Port<'d, M> {
-    #[inline]
     fn set_high(&mut self) -> Result<(), Self::Error> {
         self.set_high();
         Ok(())
     }
 
-    #[inline]
     fn set_low(&mut self) -> Result<(), Self::Error> {
         self.set_low();
         Ok(())
@@ -636,43 +624,36 @@ impl<'d, M: IoMode> embedded_hal_1::digital::OutputPin for Port<'d, M> {
 }
 
 impl<'d, M: IoMode> embedded_hal_1::digital::StatefulOutputPin for Port<'d, M> {
-    #[inline]
     fn is_set_high(&mut self) -> Result<bool, Self::Error> {
         Ok((*self).is_set_high())
     }
 
-    #[inline]
     fn is_set_low(&mut self) -> Result<bool, Self::Error> {
         Ok((*self).is_set_low())
     }
 }
 
 impl<'d> embedded_hal_async::digital::Wait for Port<'d, Async> {
-    #[inline]
     async fn wait_for_high(&mut self) -> Result<(), Self::Error> {
         self.wait_for_high().await;
         Ok(())
     }
 
-    #[inline]
     async fn wait_for_low(&mut self) -> Result<(), Self::Error> {
         self.wait_for_low().await;
         Ok(())
     }
 
-    #[inline]
     async fn wait_for_rising_edge(&mut self) -> Result<(), Self::Error> {
         self.wait_for_rising_edge().await;
         Ok(())
     }
 
-    #[inline]
     async fn wait_for_falling_edge(&mut self) -> Result<(), Self::Error> {
         self.wait_for_falling_edge().await;
         Ok(())
     }
 
-    #[inline]
     async fn wait_for_any_edge(&mut self) -> Result<(), Self::Error> {
         self.wait_for_any_edge().await;
         Ok(())
@@ -684,43 +665,36 @@ impl<'d, M: IoMode> embedded_hal_1::digital::ErrorType for Input<'d, M> {
 }
 
 impl<'d, M: IoMode> embedded_hal_1::digital::InputPin for Input<'d, M> {
-    #[inline]
     fn is_high(&mut self) -> Result<bool, Self::Error> {
         Ok((*self).is_high())
     }
 
-    #[inline]
     fn is_low(&mut self) -> Result<bool, Self::Error> {
         Ok((*self).is_low())
     }
 }
 
 impl<'d> embedded_hal_async::digital::Wait for Input<'d, Async> {
-    #[inline]
     async fn wait_for_high(&mut self) -> Result<(), Self::Error> {
         self.wait_for_high().await;
         Ok(())
     }
 
-    #[inline]
     async fn wait_for_low(&mut self) -> Result<(), Self::Error> {
         self.wait_for_low().await;
         Ok(())
     }
 
-    #[inline]
     async fn wait_for_rising_edge(&mut self) -> Result<(), Self::Error> {
         self.wait_for_rising_edge().await;
         Ok(())
     }
 
-    #[inline]
     async fn wait_for_falling_edge(&mut self) -> Result<(), Self::Error> {
         self.wait_for_falling_edge().await;
         Ok(())
     }
 
-    #[inline]
     async fn wait_for_any_edge(&mut self) -> Result<(), Self::Error> {
         self.wait_for_any_edge().await;
         Ok(())
@@ -732,13 +706,11 @@ impl<'d> embedded_hal_1::digital::ErrorType for Output<'d> {
 }
 
 impl<'d> embedded_hal_1::digital::OutputPin for Output<'d> {
-    #[inline]
     fn set_high(&mut self) -> Result<(), Self::Error> {
         self.set_high();
         Ok(())
     }
 
-    #[inline]
     fn set_low(&mut self) -> Result<(), Self::Error> {
         self.set_low();
         Ok(())
@@ -746,12 +718,10 @@ impl<'d> embedded_hal_1::digital::OutputPin for Output<'d> {
 }
 
 impl<'d> embedded_hal_1::digital::StatefulOutputPin for Output<'d> {
-    #[inline]
     fn is_set_high(&mut self) -> Result<bool, Self::Error> {
         Ok((*self).is_set_high())
     }
 
-    #[inline]
     fn is_set_low(&mut self) -> Result<bool, Self::Error> {
         Ok((*self).is_set_low())
     }

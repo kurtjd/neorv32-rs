@@ -5,15 +5,7 @@ edition = "2024"
 description = "Embassy Hardware Abstraction Layer (HAL) for the open-source NEORV32 RISC-V microcontroller"
 authors = ["Kurtis Dinelle <kurtis.dinelle@gmail.com>"]
 license = "MIT"
-keywords = [
-    "embedded",
-    "risc-v",
-    "neorv32",
-    "hal",
-    "riscv32",
-    "no-std",
-    "embassy",
-]
+keywords = ["embedded", "risc-v", "neorv32", "hal", "no-std"]
 repository = "https://github.com/kurtjd/neorv32-rs"
 
 [features]
@@ -26,7 +18,9 @@ single-core = ["riscv/critical-section-single-hart"]
 dual-core = ["critical-section/restore-state-u8"]
 
 [dependencies]
-neorv32-pac = { path = "../neorv32-pac", features = ["critical-section"] }
+neorv32-pac = { version = "0.1.0", path = "../neorv32-pac", features = [
+    "critical-section",
+] }
 riscv = { version = "0.16.0" }
 riscv-rt = { version = "0.17.0", optional = true }
 critical-section = { version = "1.2.0" }

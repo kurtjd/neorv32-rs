@@ -5,7 +5,7 @@ use embassy_hal_internal::{Peri, PeripheralType};
 
 /// PWM error.
 #[derive(Clone, Copy, Debug)]
-#[cfg_attr(feature = "defmt", defmt::Format)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum Error {
     /// Invalid duty cycle.
     InvalidDuty,
@@ -13,7 +13,7 @@ pub enum Error {
 
 /// A duty cycle percent.
 #[derive(Clone, Copy, Debug)]
-#[cfg_attr(feature = "defmt", defmt::Format)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct Percent(u8);
 impl Percent {
     /// Create a new percent.
@@ -121,6 +121,7 @@ impl<'d> Pwm<'d> {
     ///
     /// To then create a new channel instance, call [`Self::new_channel`].
     pub fn new<T: Instance>(_instance: Peri<'d, T>, clkprsc: ClkPrsc) -> Self {
+        // SAFETY: Enum ensures we are writing valid prescaler
         T::reg()
             .clkprsc()
             .write(|w| unsafe { w.bits(clkprsc.bits()) });
@@ -158,6 +159,9 @@ pub struct PwmChan<'d> {
     _phantom: PhantomData<&'d ()>,
 }
 
+// Allows for use in a Mutex (to share safely between harts and tasks)
+unsafe impl<'d> Send for PwmChan<'d> {}
+
 impl<'d> PwmChan<'d> {
     fn new<T: ChannelInstance>(
         _instance: Peri<'d, T>,
@@ -183,24 +187,28 @@ impl<'d> PwmChan<'d> {
     }
 
     fn enable(&mut self) {
+        // SAFETY: Bit mask preserves previous channel values
         self.reg
             .enable()
             .modify(|r, w| unsafe { w.bits(r.bits() | (1 << self.channel)) });
     }
 
     fn disable(&mut self) {
+        // SAFETY: Bit mask preserves previous channel values
         self.reg
             .enable()
             .modify(|r, w| unsafe { w.bits(r.bits() & !(1 << self.channel)) });
     }
 
     fn invert_polarity(&mut self) {
+        // SAFETY: Bit mask preserves previous channel values
         self.reg
             .polarity()
             .modify(|r, w| unsafe { w.bits(r.bits() | (1 << self.channel)) });
     }
 
     fn set_mode(&mut self, mode: Mode) {
+        // SAFETY: Bit mask preserves previous channel values
         self.reg.mode().modify(|r, w| unsafe {
             w.bits(match mode {
                 Mode::Fast => r.bits() & !(1 << self.channel),
@@ -246,6 +254,7 @@ impl<'d> PwmChan<'d> {
         };
         assert!(new_top <= u16::MAX as u64);
 
+        // SAFETY: We've ensured a valid TOP value above
         self.reg
             .channel(self.channel)
             .topcmp()
@@ -257,6 +266,7 @@ impl<'d> PwmChan<'d> {
         // Round to nearest integer
         let cmp = (u16::from(percent.inner()) * (self.top() + 1) + 50) / 100;
 
+        // SAFETY: We've ensured a valid CMP value above
         self.reg
             .channel(self.channel)
             .topcmp()

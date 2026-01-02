@@ -28,7 +28,7 @@ impl<T: Instance> Handler<T::Interrupt> for InterruptHandler<T> {
 
 /// SPI transfer error.
 #[derive(Clone, Copy, Debug)]
-#[cfg_attr(feature = "defmt", defmt::Formattr)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum Error {
     /// A DMA bus error occurred.
     DmaBusError,
@@ -41,6 +41,9 @@ pub struct Spi<'d, M: IoMode> {
     dma: Option<dma::Dma<'d>>,
     _phantom: PhantomData<&'d M>,
 }
+
+// Allows for use in a Mutex (to share safely between harts and tasks)
+unsafe impl<'d, M: IoMode> Send for Spi<'d, M> {}
 
 impl<'d, M: IoMode> Spi<'d, M> {
     fn tx_fifo_full(&self) -> bool {
