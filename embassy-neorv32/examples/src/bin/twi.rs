@@ -9,11 +9,7 @@ use embassy_neorv32::twi::Twi;
 use embassy_neorv32::uart::UartTx;
 use embassy_neorv32_examples::*;
 use embassy_time::Timer;
-use lm75::{Address, Lm75};
-
-// I've tied my LM75 addr pins all to ground
-// Change this depending on your configuration
-const LM75_ALL_GND: u8 = 0b10011110;
+use tmp108::Tmp108;
 
 #[embassy_executor::main]
 async fn main(_spawner: embassy_executor::Spawner) {
@@ -26,18 +22,17 @@ async fn main(_spawner: embassy_executor::Spawner) {
     // **Note**: For hardware reasons, unfortuantely an async TWI driver is not available
     let twi = Twi::new_blocking(p.TWI, 100_000, true);
 
-    // Setup and enable LM75 driver
-    let address = Address::from(LM75_ALL_GND);
-    let mut sensor = Lm75::new(twi, address);
-    sensor.enable().expect("Error enabling LM75");
+    // Setup and enable TMP108 driver
+    // Note: The constructor changes depending on your A0 config
+    let mut sensor = Tmp108::new_with_a0_gnd(twi);
 
-    // Periodically read temperature from LM75 over TWI
+    // Periodically read temperature from TMP108 over TWI
     loop {
-        if let Ok(temp) = sensor.read_temperature() {
-            writeln!(&mut uart, "Temperature: {} ºC", temp).unwrap();
-        } else {
-            uart.blocking_write(b"Error reading from LM75\n");
+        match sensor.temperature() {
+            Ok(temp) => writeln!(&mut uart, "Temperature: {} ºC", temp).unwrap(),
+            Err(e) => writeln!(&mut uart, "TMP108 error: {e:?}").unwrap(),
         }
-        Timer::after_micros(s_to_us(1)).await;
+
+        Timer::after_secs(1).await;
     }
 }

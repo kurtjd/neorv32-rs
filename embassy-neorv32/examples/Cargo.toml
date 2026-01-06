@@ -46,4 +46,4 @@ embedded-hal-bus = { version = "0.3.0", features = ["async"] }
 
 # Device drivers just for TWI/SPI examples
 is31fl3743b-driver = "0.1.1"
-lm75 = "1.0.0"
+tmp108 = "0.4.0"
