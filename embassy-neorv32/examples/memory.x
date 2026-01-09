@@ -1,8 +1,8 @@
 MEMORY
 {
   /* Lengths should match the values set in neorv32_tb. */
-  IMEM : ORIGIN = 0x00000000, LENGTH = 64K
-  DMEM : ORIGIN = 0x80000000, LENGTH = 16K
+  IMEM : ORIGIN = 0x00000000, LENGTH = 32K
+  DMEM : ORIGIN = 0x80000000, LENGTH = 8K
 }
 
 REGION_ALIAS("REGION_TEXT", IMEM);

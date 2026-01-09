@@ -52,9 +52,11 @@ the `tick-hz` feature for `embassy-time` matches your configuration
 - Press reset button on FPGA
 - If using `picocom`, manually follow these steps within host terminal:
 - Type: Any key
-- Type: u (Upload)
-- Type: Ctrl+A Ctrl+S (send file)
-- Type: hello-world-fpga
+- Type: `u` (Upload)
+- Type: `Ctrl+A Ctrl+S` (send file)
+- Type: `hello-world-fpga <Enter>`
+- Wait for upload to complete (should see `*** exit status: 0 *** OK`)
+- Type: `e` (Execute)
 - For more help, see [bootloader](https://stnolting.github.io/neorv32/#_bootloader)
 
 ## Version
