@@ -43,7 +43,8 @@ async fn main(_spawner: embassy_executor::Spawner) {
     let p = embassy_neorv32::init();
 
     // Setup UART with no HW flow control
-    let mut uart = UartTx::new_async(p.UART0, UART_BAUD, UART_IS_SIM, false, Irqs);
+    let mut uart = UartTx::new_async(p.UART0, UART_BAUD, UART_IS_SIM, false, Irqs)
+        .expect("UART must be supported");
     print_logo(&mut uart).await;
 
     // Note: '\n' seems necessary for UART writes for sim to flush output

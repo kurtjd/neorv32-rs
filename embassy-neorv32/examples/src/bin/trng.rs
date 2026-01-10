@@ -18,10 +18,11 @@ async fn main(_spawner: embassy_executor::Spawner) {
     let p = embassy_neorv32::init();
 
     // Setup UART for display purposes
-    let mut uart = UartTx::new_async(p.UART0, UART_BAUD, UART_IS_SIM, false, Irqs);
+    let mut uart = UartTx::new_async(p.UART0, UART_BAUD, UART_IS_SIM, false, Irqs)
+        .expect("UART must be supported");
 
     // Setup async TRNG
-    let mut trng = Trng::new_async(p.TRNG, Irqs);
+    let mut trng = Trng::new_async(p.TRNG, Irqs).expect("TRNG must be supported");
     if trng.sim_mode() {
         uart.write(b"Running in simulation so PRNG is used\n").await;
     }

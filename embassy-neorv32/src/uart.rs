@@ -87,6 +87,14 @@ impl<T: Instance> Handler<T::Interrupt> for InterruptHandler<T> {
     }
 }
 
+/// UART error.
+#[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+pub enum Error {
+    /// The NEORV32 configuration does not support UART.
+    NotSupported,
+}
+
 /// UART driver.
 pub struct Uart<'d, M: IoMode> {
     rx: UartRx<'d, M>,
@@ -141,10 +149,10 @@ impl<'d, M: IoMode> Uart<'d, M> {
             .modify(|_, w| w.uart_ctrl_en().set_bit());
     }
 
-    fn new_inner<T: Instance>() -> Self {
-        let rx = UartRx::new_inner::<T>();
-        let tx = UartTx::new_inner::<T>();
-        Self { rx, tx }
+    fn new_inner<T: Instance>() -> Result<Self, Error> {
+        let rx = UartRx::new_inner::<T>()?;
+        let tx = UartTx::new_inner::<T>()?;
+        Ok(Self { rx, tx })
     }
 
     /// Reads a byte from RX FIFO, blocking if empty.
@@ -191,12 +199,16 @@ impl<'d> Uart<'d, Blocking> {
     /// Creates a new blocking UART driver with given baud rate.
     ///
     /// Enables simulation mode if `sim` is true and hardware flow control if `flow_control` is true.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::NotSupported`] if UART is not supported.
     pub fn new_blocking<T: Instance>(
         _instance: Peri<'d, T>,
         baud_rate: u32,
         sim: bool,
         flow_control: bool,
-    ) -> Self {
+    ) -> Result<Self, Error> {
         Self::init(_instance, baud_rate, sim, flow_control);
         Self::new_inner::<T>()
     }
@@ -206,17 +218,22 @@ impl<'d> Uart<'d, Async> {
     /// Creates a new async UART driver with given baud rate.
     ///
     /// Enables simulation mode if `sim` is true and hardware flow control if `flow_control` is true.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::NotSupported`] if UART is not supported.
     pub fn new_async<T: Instance>(
         _instance: Peri<'d, T>,
         baud_rate: u32,
         sim: bool,
         flow_control: bool,
         _irq: impl Binding<T::Interrupt, InterruptHandler<T>> + 'd,
-    ) -> Self {
+    ) -> Result<Self, Error> {
+        let uart = Self::new_inner::<T>()?;
         Self::init(_instance, baud_rate, sim, flow_control);
         // SAFETY: It is valid to enable UART interrupt here
         unsafe { T::Interrupt::enable() }
-        Self::new_inner::<T>()
+        Ok(uart)
     }
 
     /// Reads a byte from RX FIFO.
@@ -255,14 +272,18 @@ pub struct UartRx<'d, M: IoMode> {
 unsafe impl<'d, M: IoMode> Send for UartRx<'d, M> {}
 
 impl<'d, M: IoMode> UartRx<'d, M> {
-    fn new_inner<T: Instance>() -> Self {
+    fn new_inner<T: Instance>() -> Result<Self, Error> {
+        if !T::supported() {
+            return Err(Error::NotSupported);
+        }
+
         // Mark RX as active
         T::info().active.rx.store(true, Ordering::SeqCst);
 
-        Self {
+        Ok(Self {
             info: T::info(),
             _phantom: PhantomData,
-        }
+        })
     }
 
     fn read_unchecked(&self) -> u8 {
@@ -317,13 +338,18 @@ impl<'d> UartRx<'d, Blocking> {
     /// Creates a new RX-only blocking UART driver with given baud rate.
     ///
     /// Enables hardware flow control if `flow_control` is true.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::NotSupported`] if UART is not supported.
     pub fn new_blocking<T: Instance>(
         _instance: Peri<'d, T>,
         baud_rate: u32,
         flow_control: bool,
-    ) -> Self {
+    ) -> Result<Self, Error> {
+        let uart = Self::new_inner::<T>()?;
         Uart::<Blocking>::init(_instance, baud_rate, false, flow_control);
-        Self::new_inner::<T>()
+        Ok(uart)
     }
 }
 
@@ -345,16 +371,21 @@ impl<'d> UartRx<'d, Async> {
     /// Creates a new RX-only async UART driver with given baud rate.
     ///
     /// Enables hardware flow control if `flow_control` is true.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::NotSupported`] if UART is not supported.
     pub fn new_async<T: Instance>(
         _instance: Peri<'d, T>,
         baud_rate: u32,
         flow_control: bool,
         _irq: impl Binding<T::Interrupt, InterruptHandler<T>> + 'd,
-    ) -> Self {
+    ) -> Result<Self, Error> {
+        let uart = Self::new_inner::<T>()?;
         Uart::<Async>::init(_instance, baud_rate, false, flow_control);
         // SAFETY: It is valid to enable UART interrupt here
         unsafe { T::Interrupt::enable() }
-        Self::new_inner::<T>()
+        Ok(uart)
     }
 
     /// Reads a byte from RX FIFO.
@@ -388,14 +419,18 @@ pub struct UartTx<'d, M: IoMode> {
 unsafe impl<'d, M: IoMode> Send for UartTx<'d, M> {}
 
 impl<'d, M: IoMode> UartTx<'d, M> {
-    fn new_inner<T: Instance>() -> Self {
+    fn new_inner<T: Instance>() -> Result<Self, Error> {
+        if !T::supported() {
+            return Err(Error::NotSupported);
+        }
+
         // Mark TX as active
         T::info().active.rx.store(true, Ordering::SeqCst);
 
-        Self {
+        Ok(Self {
             info: T::info(),
             _phantom: PhantomData,
-        }
+        })
     }
 
     fn write_unchecked(&mut self, byte: u8) {
@@ -477,14 +512,19 @@ impl<'d> UartTx<'d, Blocking> {
     /// Creates a new TX-only blocking UART driver with given baud rate.
     ///
     /// Enables simulation mode if `sim` is true and hardware flow control if `flow_control` is true.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::NotSupported`] if UART is not supported.
     pub fn new_blocking<T: Instance>(
         _instance: Peri<'d, T>,
         baud_rate: u32,
         sim: bool,
         flow_control: bool,
-    ) -> Self {
+    ) -> Result<Self, Error> {
+        let uart = Self::new_inner::<T>()?;
         Uart::<Blocking>::init(_instance, baud_rate, sim, flow_control);
-        Self::new_inner::<T>()
+        Ok(uart)
     }
 }
 
@@ -506,17 +546,22 @@ impl<'d> UartTx<'d, Async> {
     /// Creates a new TX-only async UART driver with given baud rate.
     ///
     /// Enables simulation mode if `sim` is true and hardware flow control if `flow_control` is true.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::NotSupported`] if UART is not supported.
     pub fn new_async<T: Instance>(
         _instance: Peri<'d, T>,
         baud_rate: u32,
         sim: bool,
         flow_control: bool,
         _irq: impl Binding<T::Interrupt, InterruptHandler<T>> + 'd,
-    ) -> Self {
+    ) -> Result<Self, Error> {
+        let uart = Self::new_inner::<T>()?;
         Uart::<Async>::init(_instance, baud_rate, sim, flow_control);
         // SAFETY: It is valid to enable UART interrupt here
         unsafe { T::Interrupt::enable() }
-        Self::new_inner::<T>()
+        Ok(uart)
     }
 
     /// Writes a byte to TX FIFO.
@@ -603,6 +648,7 @@ impl IoMode for Async {}
 
 trait SealedInstance {
     fn info() -> Info;
+    fn supported() -> bool;
 }
 
 /// A valid UART peripheral.
@@ -612,7 +658,7 @@ pub trait Instance: SealedInstance + PeripheralType {
 }
 
 macro_rules! impl_instance {
-    ($periph:ident, $rb:ident) => {
+    ($periph:ident, $rb:ident, $soc_cfg:ident) => {
         impl SealedInstance for $periph {
             // Note: uart0 and uart1 can both share uart0::RegisterBlock
             // PAC is able to coerce uart1::ptr() to it with correct base address
@@ -628,6 +674,10 @@ macro_rules! impl_instance {
                     tx_waker: &TX_WAKER,
                 }
             }
+
+            fn supported() -> bool {
+                crate::sysinfo::SysInfo::soc_config().$soc_cfg()
+            }
         }
         impl Instance for $periph {
             type Interrupt = crate::interrupt::typelevel::$periph;
@@ -635,8 +685,8 @@ macro_rules! impl_instance {
     };
 }
 
-impl_instance!(UART0, Uart0);
-impl_instance!(UART1, Uart1);
+impl_instance!(UART0, Uart0, uart0);
+impl_instance!(UART1, Uart1, uart1);
 
 // Convenience for writing formatted strings to UART
 impl<'d, M: IoMode> core::fmt::Write for UartTx<'d, M> {

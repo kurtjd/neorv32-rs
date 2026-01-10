@@ -10,7 +10,8 @@ async fn main(_spawner: embassy_executor::Spawner) {
     let p = embassy_neorv32::init();
 
     // Setup UART for display purposes
-    let mut uart = UartTx::new_blocking(p.UART0, UART_BAUD, UART_IS_SIM, false);
+    let mut uart = UartTx::new_blocking(p.UART0, UART_BAUD, UART_IS_SIM, false)
+        .expect("UART must be supported");
 
     // Print clock frequency
     writeln!(

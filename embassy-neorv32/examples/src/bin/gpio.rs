@@ -46,10 +46,11 @@ async fn main(spawner: embassy_executor::Spawner) {
     let p = embassy_neorv32::init();
 
     static UART: OnceLock<SharedUart> = OnceLock::new();
-    let uart = UartTx::new_async(p.UART0, UART_BAUD, UART_IS_SIM, false, Irqs);
+    let uart = UartTx::new_async(p.UART0, UART_BAUD, UART_IS_SIM, false, Irqs)
+        .expect("UART must be supported");
     let uart = UART.get_or_init(|| Mutex::new(uart));
 
-    let gpio = Gpio::new_async(p.GPIO, Irqs);
+    let gpio = Gpio::new_async(p.GPIO, Irqs).expect("GPIO must be supported");
 
     // Port 0
     let (input0, output0) = gpio.new_port(p.PORT0).split();

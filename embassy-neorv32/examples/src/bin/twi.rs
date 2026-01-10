@@ -16,11 +16,12 @@ async fn main(_spawner: embassy_executor::Spawner) {
     let p = embassy_neorv32::init();
 
     // Setup UART for display purposes
-    let mut uart = UartTx::new_blocking(p.UART0, UART_BAUD, UART_IS_SIM, false);
+    let mut uart = UartTx::new_blocking(p.UART0, UART_BAUD, UART_IS_SIM, false)
+        .expect("UART must be supported");
 
     // Setup TWI with frequency of 100 kHz and clock stretching enabled
     // **Note**: For hardware reasons, unfortuantely an async TWI driver is not available
-    let twi = Twi::new_blocking(p.TWI, 100_000, true);
+    let twi = Twi::new_blocking(p.TWI, 100_000, true).expect("TWI must be supported");
 
     // Setup and enable TMP108 driver
     // Note: The constructor changes depending on your A0 config

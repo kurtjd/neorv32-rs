@@ -52,6 +52,11 @@ core::arch::global_asm!(
 // SAFETY: No other symbol called `hal_main` is defined elsewhere
 #[unsafe(export_name = "hal_main")]
 fn hart_main(hart_id: usize, _: usize, _: usize) -> ! {
+    // CLINT is used for software interrupts which is necessary for inter-hart communication
+    if !crate::sysinfo::SysInfo::soc_config().clint() {
+        panic!("CLINT must be supported for dual-core to work");
+    }
+
     // Ensure global interrupts are enabled before entering user entry points
     // SAFETY: We're not worried about breaking any critical sections here
     unsafe { riscv::interrupt::enable() };

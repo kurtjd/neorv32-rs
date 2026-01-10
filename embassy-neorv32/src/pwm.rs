@@ -7,6 +7,8 @@ use embassy_hal_internal::{Peri, PeripheralType};
 #[derive(Clone, Copy, Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum Error {
+    /// The NEORV32 configuration does not support PWM.
+    NotSupported,
     /// Invalid duty cycle.
     InvalidDuty,
 }
@@ -120,16 +122,24 @@ impl<'d> Pwm<'d> {
     /// frequencies can be accurately represented.
     ///
     /// To then create a new channel instance, call [`Self::new_channel`].
-    pub fn new<T: Instance>(_instance: Peri<'d, T>, clkprsc: ClkPrsc) -> Self {
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::NotSupported`] if PWM is not supported.
+    pub fn new<T: Instance>(_instance: Peri<'d, T>, clkprsc: ClkPrsc) -> Result<Self, Error> {
+        if !crate::sysinfo::SysInfo::soc_config().pwm() {
+            return Err(Error::NotSupported);
+        }
+
         // SAFETY: Enum ensures we are writing valid prescaler
         T::reg()
             .clkprsc()
             .write(|w| unsafe { w.bits(clkprsc.bits()) });
 
-        Self {
+        Ok(Self {
             reg: T::reg(),
             _phantom: PhantomData,
-        }
+        })
     }
 
     /// Create a new instance of a PWM channel driver with given mode and frequency and enables it.

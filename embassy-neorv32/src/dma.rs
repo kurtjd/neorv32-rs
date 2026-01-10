@@ -30,6 +30,8 @@ impl<T: Instance> Handler<T::Interrupt> for InterruptHandler<T> {
 #[derive(Clone, Copy, Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum Error {
+    /// The NEORV32 configuration does not support DMA.
+    NotSupported,
     /// Indicates a bus error occurred during transfer.
     BusError,
 }
@@ -113,19 +115,27 @@ unsafe impl<'d> Send for Dma<'d> {}
 
 impl<'d> Dma<'d> {
     /// Creates a new instance of a DMA driver.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::NotSupported`] if DMA is not supported.
     pub fn new<T: Instance>(
         _instance: Peri<'d, T>,
         _irq: impl Binding<T::Interrupt, InterruptHandler<T>> + 'd,
-    ) -> Self {
+    ) -> Result<Self, Error> {
+        if !crate::sysinfo::SysInfo::soc_config().dma() {
+            return Err(Error::NotSupported);
+        }
+
         // SAFETY: Enabling DMA interrupts at this point is valid
         unsafe { T::Interrupt::enable() }
 
-        Self {
+        Ok(Self {
             reg: T::reg(),
             waker: T::waker(),
             err_flag: T::err_flag(),
             _phantom: PhantomData,
-        }
+        })
     }
 
     /// Starts a transfer which reads from src until the dst buffer is filled.

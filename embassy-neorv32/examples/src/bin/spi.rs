@@ -24,14 +24,16 @@ async fn main(_spawner: embassy_executor::Spawner) {
     let p = embassy_neorv32::init();
 
     // Setup DMA for SPI transfers
-    let dma = Dma::new(p.DMA, Irqs);
+    let dma = Dma::new(p.DMA, Irqs).expect("DMA must be supported");
 
     // Initialize SPI driver and give it the DMA controller
-    let mut spi = Spi::new_async(p.SPI, 1_000_000, MODE_0, Irqs);
+    let mut spi = Spi::new_async(p.SPI, 1_000_000, MODE_0, Irqs).expect("SPI must be supported");
     spi.give_dma(dma);
 
     // Setup CS pin and create an exclusive SPI device with it
-    let cs = Gpio::new_blocking(p.GPIO).new_output(p.PORT7);
+    let cs = Gpio::new_blocking(p.GPIO)
+        .expect("GPIO must be supported")
+        .new_output(p.PORT7);
     let spi_dev = ExclusiveDevice::new(spi, cs, Delay).unwrap();
 
     // Initialize led matrix controller driver

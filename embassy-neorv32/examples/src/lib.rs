@@ -36,17 +36,18 @@ fn panic_handler(info: &core::panic::PanicInfo) -> ! {
 
     let hart = riscv::register::mhartid::read();
     let p = unsafe { embassy_neorv32::Peripherals::steal() };
-    let mut uart =
-        embassy_neorv32::uart::UartTx::new_blocking(p.UART0, UART_BAUD, UART_IS_SIM, false);
-
-    writeln!(
-        &mut uart,
-        "\n\nHART {} PANIC: {} at {}",
-        hart,
-        info.message(),
-        info.location().unwrap()
-    )
-    .unwrap();
+    if let Ok(mut uart) =
+        embassy_neorv32::uart::UartTx::new_blocking(p.UART0, UART_BAUD, UART_IS_SIM, false)
+    {
+        writeln!(
+            &mut uart,
+            "\n\nHART {} PANIC: {} at {}",
+            hart,
+            info.message(),
+            info.location().unwrap()
+        )
+        .unwrap();
+    }
 
     loop {
         riscv::asm::wfi();

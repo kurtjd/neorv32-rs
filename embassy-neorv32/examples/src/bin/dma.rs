@@ -45,11 +45,12 @@ async fn main(spawner: embassy_executor::Spawner) {
     let p = embassy_neorv32::init();
 
     // Setup UART just for printing WDT state
-    let uart = UartTx::new_async(p.UART0, UART_BAUD, UART_IS_SIM, false, Irqs);
+    let uart = UartTx::new_async(p.UART0, UART_BAUD, UART_IS_SIM, false, Irqs)
+        .expect("UART must be supported");
     let uart = UART.get_or_init(|| Mutex::new(uart));
 
     // Setup DMA
-    let dma = Dma::new(p.DMA, Irqs);
+    let dma = Dma::new(p.DMA, Irqs).expect("DMA must be supported");
     spawner.must_spawn(dma_transfer(dma, uart));
 
     loop {

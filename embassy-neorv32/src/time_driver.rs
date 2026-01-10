@@ -57,6 +57,11 @@ impl MtimerDriver {
 }
 
 pub(crate) fn init() {
+    // CLINT is used for timer interrupts which is necessary for time keeping
+    if !crate::sysinfo::SysInfo::soc_config().clint() {
+        panic!("CLINT must be supported for time-driver to work");
+    }
+
     // Ensure only hart 0 initializes time-driver
     assert_eq!(riscv::register::mhartid::read(), 0);
 

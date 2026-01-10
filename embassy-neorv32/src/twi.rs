@@ -59,10 +59,12 @@ impl From<Rw> for u8 {
     }
 }
 
-/// TWI Error.
+/// TWI error.
 #[derive(Clone, Copy, Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum Error {
+    /// The NEORV32 configuration does not support TWI.
+    NotSupported,
     /// Device failed to ack address.
     NackAddr,
     /// Device failed to ack data.
@@ -178,7 +180,11 @@ impl<'d, M: IoMode> Twi<'d, M> {
         _instance: Peri<'d, T>,
         twi_freq: u32,
         clock_stretch_en: bool,
-    ) -> Self {
+    ) -> Result<Self, Error> {
+        if !crate::sysinfo::SysInfo::soc_config().twi() {
+            return Err(Error::NotSupported);
+        }
+
         let cpu_freq = crate::sysinfo::SysInfo::clock_freq() as u64;
         let mut cdiv = (cpu_freq / (4 * twi_freq as u64 * 2)) - 1;
         let mut psc = 0;
@@ -215,10 +221,10 @@ impl<'d, M: IoMode> Twi<'d, M> {
         // Enable TWI
         T::reg().ctrl().modify(|_, w| w.twi_ctrl_en().set_bit());
 
-        Self {
+        Ok(Self {
             reg: T::reg(),
             _phantom: PhantomData,
-        }
+        })
     }
 
     /// Perform a blocking read from specified address on the TWI bus into buffer.
@@ -299,11 +305,15 @@ impl<'d, M: IoMode> Twi<'d, M> {
 
 impl<'d> Twi<'d, Blocking> {
     /// Returns a new instance of a blocking TWI driver with given frequency (in Hz).
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::NotSupported`] if TWI is not supported.
     pub fn new_blocking<T: Instance>(
         _instance: Peri<'d, T>,
         twi_freq: u32,
         clock_stretch_en: bool,
-    ) -> Self {
+    ) -> Result<Self, Error> {
         Self::new_inner(_instance, twi_freq, clock_stretch_en)
     }
 }
@@ -337,6 +347,7 @@ impl Instance for TWI {}
 impl embedded_hal_1::i2c::Error for Error {
     fn kind(&self) -> embedded_hal_1::i2c::ErrorKind {
         match *self {
+            Self::NotSupported => embedded_hal_1::i2c::ErrorKind::Other,
             Self::NackAddr => embedded_hal_1::i2c::ErrorKind::NoAcknowledge(
                 embedded_hal_1::i2c::NoAcknowledgeSource::Address,
             ),

@@ -44,6 +44,14 @@ impl<T: Instance> Handler<T::Interrupt> for InterruptHandler<T> {
     }
 }
 
+/// GPIO error.
+#[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+pub enum Error {
+    /// The NEORV32 configuration does not support GPIO.
+    NotSupported,
+}
+
 /// GPIO driver.
 pub struct Gpio<'d, M: IoMode> {
     reg: &'static crate::pac::gpio::RegisterBlock,
@@ -52,12 +60,16 @@ pub struct Gpio<'d, M: IoMode> {
 }
 
 impl<'d, M: IoMode> Gpio<'d, M> {
-    fn new_inner<T: Instance>(_instance: Peri<'d, T>) -> Self {
-        Self {
+    fn new_inner<T: Instance>(_instance: Peri<'d, T>) -> Result<Self, Error> {
+        if !crate::sysinfo::SysInfo::soc_config().gpio() {
+            return Err(Error::NotSupported);
+        }
+
+        Ok(Self {
             reg: T::reg(),
             wakers: T::wakers(),
             _phantom: PhantomData,
-        }
+        })
     }
 
     /// Create a new instance of a port driver capable of simultaneous input and output.
@@ -78,20 +90,29 @@ impl<'d, M: IoMode> Gpio<'d, M> {
 
 impl<'d> Gpio<'d, Blocking> {
     /// Create a new instance of a blocking GPIO driver.
-    pub fn new_blocking<T: Instance>(_instance: Peri<'d, T>) -> Self {
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::NotSupported`] if GPIO is not supported.
+    pub fn new_blocking<T: Instance>(_instance: Peri<'d, T>) -> Result<Self, Error> {
         Self::new_inner(_instance)
     }
 }
 
 impl<'d> Gpio<'d, Async> {
     /// Create a new instance of an async GPIO driver.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::NotSupported`] if GPIO is not supported.
     pub fn new_async<T: Instance>(
         _instance: Peri<'d, T>,
         _irq: impl Binding<T::Interrupt, InterruptHandler<T>> + 'd,
-    ) -> Self {
+    ) -> Result<Self, Error> {
+        let gpio = Self::new_inner(_instance)?;
         // SAFETY: It is valid to enable GPIO interrupt here
         unsafe { T::Interrupt::enable() }
-        Self::new_inner(_instance)
+        Ok(gpio)
     }
 }
 

@@ -26,10 +26,12 @@ impl<T: Instance> Handler<T::Interrupt> for InterruptHandler<T> {
     }
 }
 
-/// SPI transfer error.
+/// SPI error.
 #[derive(Clone, Copy, Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum Error {
+    /// The NEORV32 configuration does not support SPI.
+    NotSupported,
     /// A DMA bus error occurred.
     DmaBusError,
 }
@@ -91,7 +93,15 @@ impl<'d, M: IoMode> Spi<'d, M> {
         }
     }
 
-    fn new_inner<T: Instance>(_instance: Peri<'d, T>, spi_freq: u32, mode: Mode) -> Self {
+    fn new_inner<T: Instance>(
+        _instance: Peri<'d, T>,
+        spi_freq: u32,
+        mode: Mode,
+    ) -> Result<Self, Error> {
+        if !crate::sysinfo::SysInfo::soc_config().spi() {
+            return Err(Error::NotSupported);
+        }
+
         // Configure clock phase and polarity
         match mode.polarity {
             Polarity::IdleLow => T::reg().ctrl().modify(|_, w| w.spi_ctrl_cpol().clear_bit()),
@@ -137,12 +147,12 @@ impl<'d, M: IoMode> Spi<'d, M> {
         // Enable SPI
         T::reg().ctrl().modify(|_, w| w.spi_ctrl_en().set_bit());
 
-        Self {
+        Ok(Self {
             reg: T::reg(),
             waker: T::waker(),
             dma: None,
             _phantom: PhantomData,
-        }
+        })
     }
 
     /// Perform a blocking read on the SPI bus.
@@ -211,7 +221,15 @@ impl<'d, M: IoMode> Spi<'d, M> {
 
 impl<'d> Spi<'d, Blocking> {
     /// Returns a new instance of a blocking SPI driver with given frequency (in Hz) and mode.
-    pub fn new_blocking<T: Instance>(_instance: Peri<'d, T>, spi_freq: u32, mode: Mode) -> Self {
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::NotSupported`] if SPI is not supported.
+    pub fn new_blocking<T: Instance>(
+        _instance: Peri<'d, T>,
+        spi_freq: u32,
+        mode: Mode,
+    ) -> Result<Self, Error> {
         Self::new_inner(_instance, spi_freq, mode)
     }
 }
@@ -259,12 +277,16 @@ impl<'d> Spi<'d, Async> {
     }
 
     /// Returns a new instance of an async SPI driver with given frequency (in Hz) and mode.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::NotSupported`] if SPI is not supported.
     pub fn new_async<T: Instance>(
         _instance: Peri<'d, T>,
         spi_freq: u32,
         mode: Mode,
         _irq: impl Binding<T::Interrupt, InterruptHandler<T>> + 'd,
-    ) -> Self {
+    ) -> Result<Self, Error> {
         Self::new_inner(_instance, spi_freq, mode)
     }
 
@@ -463,9 +485,7 @@ impl<'d, M: IoMode> embedded_hal_02::blocking::spi::Write<u8> for Spi<'d, M> {
 
 impl embedded_hal_1::spi::Error for Error {
     fn kind(&self) -> embedded_hal_1::spi::ErrorKind {
-        match *self {
-            Self::DmaBusError => embedded_hal_1::spi::ErrorKind::Other,
-        }
+        embedded_hal_1::spi::ErrorKind::Other
     }
 }
 

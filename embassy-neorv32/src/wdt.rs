@@ -31,6 +31,14 @@ impl From<u8> for ResetCause {
     }
 }
 
+/// WDT error.
+#[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+pub enum Error {
+    /// The NEORV32 configuration does not support WDT.
+    NotSupported,
+}
+
 /// Watchdog Timer (WDT) Driver.
 pub struct Wdt<'d, M: LockMode> {
     reg: &'static crate::pac::wdt::RegisterBlock,
@@ -41,7 +49,15 @@ impl<'d> Wdt<'d, Unlocked> {
     /// Returns a new unlocked WDT with timeout set to 24-bit max.
     ///
     /// Caller should configure timeout and then enable the WDT.
-    pub fn new<T: Instance>(_instance: Peri<'d, T>) -> Self {
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::NotSupported`] if WDT is not supported.
+    pub fn new<T: Instance>(_instance: Peri<'d, T>) -> Result<Self, Error> {
+        if !crate::sysinfo::SysInfo::soc_config().wdt() {
+            return Err(Error::NotSupported);
+        }
+
         let wdt = Self {
             reg: T::reg(),
             _phantom: PhantomData,
@@ -49,7 +65,7 @@ impl<'d> Wdt<'d, Unlocked> {
 
         // Set timeout to max so WDT does not immediately reset if user calls `enable` before `set_timeout`
         wdt.set_timeout(0xffffff);
-        wdt
+        Ok(wdt)
     }
 
     /// Enable WDT.

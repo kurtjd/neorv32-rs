@@ -4,7 +4,7 @@
 #![no_main]
 
 #[cfg(not(feature = "dual-core"))]
-compile_error!("The `dual-core` feature must be enabled.");
+compile_error!("The `dual-core` feature must be supported.");
 
 use core::fmt::Write;
 use embassy_neorv32::dualcore;
@@ -58,12 +58,13 @@ async fn hart1_task(uart: &'static SharedUart, mut trng: Trng<'static, trng::Asy
 async fn main(spawner: embassy_executor::Spawner) {
     let p = embassy_neorv32::init();
 
-    let uart = UartTx::new_async(p.UART0, UART_BAUD, UART_IS_SIM, false, Irqs);
+    let uart = UartTx::new_async(p.UART0, UART_BAUD, UART_IS_SIM, false, Irqs)
+        .expect("UART must be supported");
     let uart = UART.get_or_init(|| Mutex::new(uart));
     uart.lock().await.write(b"Hello from hart 0!\n").await;
 
     dualcore::hart1_start_with_executor(p.HART1, |spawner| {
-        let trng = Trng::new_async(p.TRNG, Irqs);
+        let trng = Trng::new_async(p.TRNG, Irqs).expect("TRNG must be supported");
         spawner.must_spawn(hart1_task(uart, trng));
     });
 

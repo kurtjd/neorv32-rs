@@ -21,6 +21,14 @@ impl<T: Instance> Handler<T::Interrupt> for InterruptHandler<T> {
     }
 }
 
+/// TRNG error.
+#[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+pub enum Error {
+    /// The NEORV32 configuration does not support TRNG.
+    NotSupported,
+}
+
 /// True Random-Number Generator (TRNG) Driver.
 pub struct Trng<'d, M: ReadMode> {
     reg: &'static crate::pac::trng::RegisterBlock,
@@ -32,15 +40,19 @@ pub struct Trng<'d, M: ReadMode> {
 unsafe impl<'d, M: ReadMode> Send for Trng<'d, M> {}
 
 impl<'d, M: ReadMode> Trng<'d, M> {
-    fn new_inner<T: Instance>(_instance: Peri<'d, T>) -> Self {
+    fn new_inner<T: Instance>(_instance: Peri<'d, T>) -> Result<Self, Error> {
+        if !crate::sysinfo::SysInfo::soc_config().trng() {
+            return Err(Error::NotSupported);
+        }
+
         // Enable TRNG
         T::reg().ctrl().modify(|_, w| w.trng_ctrl_en().set_bit());
 
-        Self {
+        Ok(Self {
             reg: T::reg(),
             waker: T::waker(),
             _phantom: PhantomData,
-        }
+        })
     }
 
     fn read_unchecked(&self) -> u8 {
@@ -81,17 +93,25 @@ impl<'d, M: ReadMode> Trng<'d, M> {
 
 impl<'d> Trng<'d, Blocking> {
     /// Returns a new instance of a blocking TRNG.
-    pub fn new_blocking<T: Instance>(_instance: Peri<'d, T>) -> Self {
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::NotSupported`] if TRNG is not supported.
+    pub fn new_blocking<T: Instance>(_instance: Peri<'d, T>) -> Result<Self, Error> {
         Self::new_inner(_instance)
     }
 }
 
 impl<'d> Trng<'d, Async> {
     /// Returns a new instance of an async TRNG.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::NotSupported`] if TRNG is not supported.
     pub fn new_async<T: Instance>(
         _instance: Peri<'d, T>,
         _irq: impl Binding<T::Interrupt, InterruptHandler<T>> + 'd,
-    ) -> Self {
+    ) -> Result<Self, Error> {
         Self::new_inner(_instance)
     }
 
