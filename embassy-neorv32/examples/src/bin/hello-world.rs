@@ -66,7 +66,7 @@ const LOGO: [u8; (ROWS * (1 + (COLS * CHARS))) + 1] = {
 async fn main(_spawner: embassy_executor::Spawner) {
     let p = embassy_neorv32::init();
 
-    // Setup UART with no HW flow control
+    // Setup UART with no HW flow control and DMA
     let mut uart = UartTx::new_async_with_dma(p.UART0, UART_BAUD, UART_IS_SIM, false, p.DMA, Irqs)
         .expect("UART and DMA must be supported");
 
