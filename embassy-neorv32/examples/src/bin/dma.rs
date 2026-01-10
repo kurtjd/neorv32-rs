@@ -25,14 +25,18 @@ async fn dma_transfer(mut dma: Dma<'static>, uart: &'static SharedUart) {
         let src = [42u8; 1024];
         let mut dst = [69u8; 1024];
 
-        uart.lock().await.write(b"DMA transfer started..\n").await;
+        uart.lock()
+            .await
+            .write(b"DMA transfer started..\n")
+            .await
+            .unwrap();
         let res = dma.copy(&src, &mut dst, false).await;
         {
             let mut uart = uart.lock().await;
             if res.is_ok() && src.iter().last() == dst.iter().last() {
-                uart.write(b"DMA transfer complete\n").await;
+                uart.write(b"DMA transfer complete\n").await.unwrap();
             } else {
-                uart.write(b"DMA transfer failed\n").await;
+                uart.write(b"DMA transfer failed\n").await.unwrap();
             }
         }
 
@@ -54,7 +58,11 @@ async fn main(spawner: embassy_executor::Spawner) {
     spawner.must_spawn(dma_transfer(dma, uart));
 
     loop {
-        uart.lock().await.write(b"Doing some work...\n").await;
+        uart.lock()
+            .await
+            .write(b"Doing some work...\n")
+            .await
+            .unwrap();
         Timer::after_micros(s_to_us(1)).await;
     }
 }

@@ -29,7 +29,7 @@ async fn input_task(
 ) {
     loop {
         input_pin.wait_for_any_edge().await;
-        uart.lock().await.write(msg).await;
+        uart.lock().await.write(msg).await.unwrap();
     }
 }
 

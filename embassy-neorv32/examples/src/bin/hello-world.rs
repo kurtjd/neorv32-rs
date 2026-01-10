@@ -1,18 +1,26 @@
 #![no_std]
 #![no_main]
+
 use embassy_neorv32::bind_interrupts;
+use embassy_neorv32::dma;
 use embassy_neorv32::peripherals;
 use embassy_neorv32::uart::{self, UartTx};
 use embassy_neorv32_examples::*;
 
 bind_interrupts!(struct Irqs {
     UART0 => uart::InterruptHandler<peripherals::UART0>;
+    DMA => dma::InterruptHandler<peripherals::DMA>;
 });
+
+const ROWS: usize = 9;
+const COLS: usize = 7;
+const CHARS: usize = 16;
 
 // Ported to Rust from:
 // https://github.com/stnolting/neorv32/blob/main/sw/lib/source/neorv32_aux.c#L605
-async fn print_logo(uart: &mut UartTx<'static, uart::Async>) {
-    const LOGO: [[u16; 7]; 9] = [
+// This just creates a neat NEORV32 logo :)
+const LOGO: [u8; (ROWS * (1 + (COLS * CHARS))) + 1] = {
+    const LOGO_RAW: [[u16; COLS]; ROWS] = [
         [0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0300, 0xc630],
         [0x60c7, 0xfc7f, 0x87f8, 0xc0c7, 0xf87f, 0x8303, 0xfffc],
         [0xf0cc, 0x00c0, 0xcc0c, 0xc0cc, 0x0cc0, 0xc30f, 0x000f],
@@ -24,30 +32,47 @@ async fn print_logo(uart: &mut UartTx<'static, uart::Async>) {
         [0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0300, 0xc630],
     ];
 
-    for row in LOGO {
-        uart.write_byte(b'\n').await;
-        for val in row {
-            let mut tmp = val;
-            for _ in 0..16 {
-                let c = if (tmp as i16) < 0 { b'#' } else { b' ' };
-                uart.write_byte(c).await;
+    let mut bytes = [0; (ROWS * (1 + (COLS * CHARS))) + 1];
+    let mut i = 0;
+    let mut row = 0;
+
+    while row < ROWS {
+        bytes[i] = b'\n';
+        i += 1;
+
+        let mut col = 0;
+        while col < COLS {
+            let mut tmp = LOGO_RAW[row][col];
+
+            let mut char = 0;
+            while char < CHARS {
+                bytes[i] = if (tmp as i16) < 0 { b'#' } else { b' ' };
+                i += 1;
                 tmp <<= 1;
+                char += 1;
             }
+
+            col += 1;
         }
+
+        row += 1;
     }
-    uart.write_byte(b'\n').await;
-}
+
+    bytes[i] = b'\n';
+    bytes
+};
 
 #[embassy_executor::main]
 async fn main(_spawner: embassy_executor::Spawner) {
     let p = embassy_neorv32::init();
 
     // Setup UART with no HW flow control
-    let mut uart = UartTx::new_async(p.UART0, UART_BAUD, UART_IS_SIM, false, Irqs)
-        .expect("UART must be supported");
-    print_logo(&mut uart).await;
+    let mut uart = UartTx::new_async_with_dma(p.UART0, UART_BAUD, UART_IS_SIM, false, p.DMA, Irqs)
+        .expect("UART and DMA must be supported");
+
+    uart.write(&LOGO).await.unwrap();
 
     // Note: '\n' seems necessary for UART writes for sim to flush output
     // Note 2: Now as of v.12.6 UART TX doesn't seem to flush at all until simulation reaches its stop-time :(
-    uart.write(b"Hello world! :)\n").await;
+    uart.write(b"Hello world! :)\n").await.unwrap();
 }

@@ -24,7 +24,9 @@ async fn main(_spawner: embassy_executor::Spawner) {
     // Setup async TRNG
     let mut trng = Trng::new_async(p.TRNG, Irqs).expect("TRNG must be supported");
     if trng.sim_mode() {
-        uart.write(b"Running in simulation so PRNG is used\n").await;
+        uart.write(b"Running in simulation so PRNG is used\n")
+            .await
+            .unwrap();
     }
 
     loop {

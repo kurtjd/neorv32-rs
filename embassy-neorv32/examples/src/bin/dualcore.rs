@@ -42,12 +42,20 @@ async fn hart0_task(uart: &'static SharedUart) {
 async fn hart1_task(uart: &'static SharedUart, mut trng: Trng<'static, trng::Async>) {
     assert_eq!(riscv::register::mhartid::read(), 1);
 
-    uart.lock().await.write(b"Hello from hart 1!\n").await;
+    uart.lock()
+        .await
+        .write(b"Hello from hart 1!\n")
+        .await
+        .unwrap();
     loop {
         let mut buf = [0; 4];
         trng.read(&mut buf).await;
         RNG.send(u32::from_be_bytes(buf)).await;
-        uart.lock().await.write(b"Hart 1: Sent RNG\n").await;
+        uart.lock()
+            .await
+            .write(b"Hart 1: Sent RNG\n")
+            .await
+            .unwrap();
         Timer::after_micros(ms_to_us(100)).await;
     }
 }
@@ -61,7 +69,11 @@ async fn main(spawner: embassy_executor::Spawner) {
     let uart = UartTx::new_async(p.UART0, UART_BAUD, UART_IS_SIM, false, Irqs)
         .expect("UART must be supported");
     let uart = UART.get_or_init(|| Mutex::new(uart));
-    uart.lock().await.write(b"Hello from hart 0!\n").await;
+    uart.lock()
+        .await
+        .write(b"Hello from hart 0!\n")
+        .await
+        .unwrap();
 
     dualcore::hart1_start_with_executor(p.HART1, |spawner| {
         let trng = Trng::new_async(p.TRNG, Irqs).expect("TRNG must be supported");
