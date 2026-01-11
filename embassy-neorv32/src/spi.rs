@@ -238,9 +238,9 @@ impl<'d> Spi<'d, Async> {
     async fn read_chunk(&mut self, chunk: &mut [u8]) -> Result<(), Error> {
         // If DMA available, use it to transfer data from RX FIFO to buffer
         if let Some(dma) = &mut self.dma {
-            // SAFETY: The PAC ensures the data register pointer is not-null and properly aligned,
-            // and the DMA controller takes care to only transfer the 8 LSB
-            let src = unsafe { self.reg.data().as_ptr().as_ref().unwrap_unchecked() };
+            let src = self.reg.data().as_ptr() as *const u8;
+            // SAFETY: The PAC ensures the data register pointer is not-null and properly aligned
+            let src = unsafe { src.as_ref().unwrap_unchecked() };
             dma.read(src, chunk, false)
                 .await
                 .map_err(|_| Error::DmaBusError)?;
@@ -258,10 +258,9 @@ impl<'d> Spi<'d, Async> {
     async fn write_chunk(&mut self, chunk: &[u8]) -> Result<(), Error> {
         // If DMA available, use it to transfer data from buffer to TX FIFO
         if let Some(dma) = &mut self.dma {
-            // SAFETY: The PAC ensures the data register pointer is not-null and properly aligned,
-            // and the DMA controller takes care of zero-extending the byte to 32 bits, which helpfully
-            // also marks the write as a DATA byte
-            let dst = unsafe { self.reg.data().as_ptr().as_mut().unwrap_unchecked() };
+            let dst = self.reg.data().as_ptr() as *mut u8;
+            // SAFETY: The PAC ensures the data register pointer is not-null and properly aligned
+            let dst = unsafe { dst.as_mut().unwrap_unchecked() };
             dma.write(chunk, dst, false)
                 .await
                 .map_err(|_| Error::DmaBusError)?;

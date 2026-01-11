@@ -31,7 +31,7 @@ async fn main(_spawner: embassy_executor::Spawner) {
 
     // Read characters from player until buffer is full
     let mut friend = [0; 6];
-    uart.read(&mut friend).await;
+    uart.read(&mut friend).await.unwrap();
 
     // Did they speak the Elvish word for friend?
     if let Ok(friend) = str::from_utf8(&friend)

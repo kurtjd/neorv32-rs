@@ -143,18 +143,18 @@ impl<'d> Dma<'d> {
     /// # Panics
     ///
     /// Panics if the dst buffer length is greater than u23 max.
-    pub fn read<'t, SW: Word, DW: Word>(
+    pub fn read<'t, W: Word>(
         &'t mut self,
-        src: &SW,
-        dst: &mut [DW],
+        src: &W,
+        dst: &mut [W],
         swap_byte_order: bool,
     ) -> Transfer<'d, 't> {
         Transfer::new(
             self,
-            src as *const SW as *const u32,
-            SW::cfg_constant(),
+            src as *const W as *const u32,
+            W::cfg_constant(),
             dst.as_mut_ptr() as *mut u32,
-            DW::cfg_increment(),
+            W::cfg_increment(),
             dst.len() as u32,
             swap_byte_order,
         )
@@ -165,18 +165,18 @@ impl<'d> Dma<'d> {
     /// # Panics
     ///
     /// Panics if the src buffer length is greater than u23 max.
-    pub fn write<'t, SW: Word, DW: Word>(
+    pub fn write<'t, W: Word>(
         &'t mut self,
-        src: &[SW],
-        dst: &mut DW,
+        src: &[W],
+        dst: &mut W,
         swap_byte_order: bool,
     ) -> Transfer<'d, 't> {
         Transfer::new(
             self,
             src.as_ptr() as *const u32,
-            SW::cfg_increment(),
-            dst as *mut DW as *mut u32,
-            DW::cfg_constant(),
+            W::cfg_increment(),
+            dst as *mut W as *mut u32,
+            W::cfg_constant(),
             src.len() as u32,
             swap_byte_order,
         )
@@ -188,19 +188,19 @@ impl<'d> Dma<'d> {
     ///
     /// Panics if the src buffer length does not match the dst buffer length,
     /// or if the buffer length is greater than u23 max.
-    pub fn copy<'t, SW: Word, DW: Word>(
+    pub fn copy<'t, W: Word>(
         &'t mut self,
-        src: &[SW],
-        dst: &mut [DW],
+        src: &[W],
+        dst: &mut [W],
         swap_byte_order: bool,
     ) -> Transfer<'d, 't> {
         assert!(src.len() == dst.len());
         Transfer::new(
             self,
             src.as_ptr() as *const u32,
-            SW::cfg_increment(),
+            W::cfg_increment(),
             dst.as_mut_ptr() as *mut u32,
-            DW::cfg_increment(),
+            W::cfg_increment(),
             src.len() as u32,
             swap_byte_order,
         )
