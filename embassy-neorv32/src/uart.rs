@@ -166,6 +166,10 @@ impl<'d, M: IoMode> Uart<'d, M> {
         Ok(Self { rx, tx })
     }
 
+    fn blocking_flush(&mut self) {
+        self.tx.blocking_flush();
+    }
+
     /// Reads a byte from RX FIFO, blocking if empty.
     pub fn blocking_read_byte(&self) -> u8 {
         self.rx.blocking_read_byte()
@@ -184,11 +188,6 @@ impl<'d, M: IoMode> Uart<'d, M> {
     /// Writes bytes to TX FIFO, blocking if full.
     pub fn blocking_write(&mut self, bytes: &[u8]) {
         self.tx.blocking_write(bytes);
-    }
-
-    /// Blocks until all TX complete.
-    pub fn blocking_flush(&mut self) {
-        self.tx.blocking_flush();
     }
 
     /// Splits the UART driver into separate [`UartRx`] and [`UartTx`] drivers.
@@ -239,6 +238,10 @@ impl<'d> Uart<'d, Async> {
         // SAFETY: It is valid to enable UART interrupt here
         unsafe { T::Interrupt::enable() }
         Ok(uart)
+    }
+
+    fn flush(&mut self) -> impl Future<Output = ()> {
+        self.tx.flush()
     }
 
     /// Creates a new async UART driver with given baud rate.
@@ -326,11 +329,6 @@ impl<'d> Uart<'d, Async> {
     /// Returns [`Error::Dma`] if DMA error occurred during transfer.
     pub fn write(&mut self, bytes: &[u8]) -> impl Future<Output = Result<(), Error>> {
         self.tx.write(bytes)
-    }
-
-    /// Waits until all TX complete.
-    pub fn flush(&mut self) -> impl Future<Output = ()> {
-        self.tx.flush()
     }
 }
 
@@ -641,6 +639,10 @@ impl<'d, M: IoMode> UartTx<'d, M> {
         self.info.reg.ctrl().read().uart_ctrl_tx_busy().bit_is_set()
     }
 
+    fn blocking_flush(&mut self) {
+        while self.busy() {}
+    }
+
     /// Writes a byte to TX FIFO, blocking if full.
     pub fn blocking_write_byte(&mut self, byte: u8) {
         while self.fifo_full() {}
@@ -655,11 +657,6 @@ impl<'d, M: IoMode> UartTx<'d, M> {
             self.write_inner(*byte);
         }
         self.blocking_flush();
-    }
-
-    /// Blocks until all TX complete.
-    pub fn blocking_flush(&mut self) {
-        while self.busy() {}
     }
 }
 
@@ -714,6 +711,20 @@ impl<'d> UartTx<'d, Async> {
         // SAFETY: It is valid to enable UART interrupt here
         unsafe { T::Interrupt::enable() }
         Ok(uart)
+    }
+
+    async fn flush(&mut self) {
+        poll_fn(|cx| {
+            self.info.tx_waker.register(cx.waker());
+            if !self.busy() {
+                Poll::Ready(())
+            } else {
+                // CS used here since interrupt modifies register
+                critical_section::with(|_| self.enable_irq_tx_empty());
+                Poll::Pending
+            }
+        })
+        .await
     }
 
     /// Creates a new TX-only async UART driver with given baud rate.
@@ -776,21 +787,6 @@ impl<'d> UartTx<'d, Async> {
         }
 
         Ok(())
-    }
-
-    /// Waits until all TX complete.
-    pub async fn flush(&mut self) {
-        poll_fn(|cx| {
-            self.info.tx_waker.register(cx.waker());
-            if !self.busy() {
-                Poll::Ready(())
-            } else {
-                // CS used here since interrupt modifies register
-                critical_section::with(|_| self.enable_irq_tx_empty());
-                Poll::Pending
-            }
-        })
-        .await
     }
 }
 
