@@ -17,7 +17,7 @@ bind_interrupts!(struct Irqs {
 async fn main(_spawner: embassy_executor::Spawner) {
     let p = embassy_neorv32::init();
 
-    // Setup UART with no HW flow control
+    // Setup async UART with no DMA (since we aren't expecting large amounts of data)
     let mut uart = Uart::new_async(p.UART0, UART_BAUD, UART_IS_SIM, false, Irqs)
         .expect("UART must be supported");
 

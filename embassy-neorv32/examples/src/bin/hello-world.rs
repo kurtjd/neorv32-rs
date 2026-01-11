@@ -66,7 +66,7 @@ const LOGO: [u8; (ROWS * (1 + (COLS * CHARS))) + 1] = {
 async fn main(_spawner: embassy_executor::Spawner) {
     let p = embassy_neorv32::init();
 
-    // Setup UART with no HW flow control and DMA
+    // Setup async UART (TX only) with DMA (since the logo has a lot of data to transfer)
     let mut uart = UartTx::new_async_with_dma(p.UART0, UART_BAUD, UART_IS_SIM, false, p.DMA, Irqs)
         .expect("UART and DMA must be supported");
 
@@ -74,5 +74,6 @@ async fn main(_spawner: embassy_executor::Spawner) {
 
     // Note: '\n' seems necessary for UART writes for sim to flush output
     // Note 2: Now as of v.12.6 UART TX doesn't seem to flush at all until simulation reaches its stop-time :(
+    // So if in simulation mode, need to wait until stop time is reached before any output will be visual
     uart.write(b"Hello world! :)\n").await.unwrap();
 }

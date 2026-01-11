@@ -10,7 +10,6 @@ use embassy_neorv32_examples::*;
 async fn main(_spawner: embassy_executor::Spawner) {
     let p = embassy_neorv32::init();
 
-    // Setup UART for display purposes
     let mut uart = UartTx::new_blocking(p.UART0, UART_BAUD, UART_IS_SIM, false)
         .expect("UART must be supported");
 
@@ -22,7 +21,7 @@ async fn main(_spawner: embassy_executor::Spawner) {
     )
     .unwrap();
 
-    // Print memory size
+    // Print memory sizes
     writeln!(&mut uart, "IMEM size: {} KiB", SysInfo::imem_size() / 1024).unwrap();
     writeln!(&mut uart, "DMEM size: {} KiB", SysInfo::dmem_size() / 1024).unwrap();
 

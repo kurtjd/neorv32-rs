@@ -14,7 +14,7 @@ defmt = ["dep:defmt"]
 rt = ["dep:riscv-rt", "neorv32-pac/rt"]
 v-trap = ["rt", "neorv32-pac/v-trap"]
 time-driver = ["dep:embassy-time-driver", "dep:embassy-time-queue-utils", "rt"]
-single-hart = ["riscv/critical-section-single-hart", "riscv-rt/single-hart"]
+single-hart = ["riscv/critical-section-single-hart"]
 dual-hart = ["critical-section/restore-state-u8"]
 
 [dependencies]

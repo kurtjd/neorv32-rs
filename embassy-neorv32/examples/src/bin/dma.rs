@@ -18,6 +18,12 @@ async fn main(_spawner: embassy_executor::Spawner) {
     let mut uart = UartTx::new_blocking(p.UART0, UART_BAUD, UART_IS_SIM, false)
         .expect("UART must be supported");
 
+    // Note: DMA is single-channel only, so only one driver can own it.
+    // Typically you would instantiate the DMA driver instance directly like this
+    // only when you want to perform memory-to-memory transfers.
+    //
+    // If you want peripheral drivers (such as UART) to use DMA, you would pass `p.DMA` to their
+    // constructors.
     let mut dma = Dma::new(p.DMA, Irqs).expect("DMA must be supported");
 
     let src = [0xAAu8; 1024];

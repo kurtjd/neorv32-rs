@@ -4,7 +4,7 @@
 #![no_main]
 
 #[cfg(not(feature = "dual-hart"))]
-compile_error!("The `dual-hart` feature must be supported.");
+compile_error!("The `dual-hart` feature must be enabled.");
 
 use core::fmt::Write;
 use embassy_neorv32::dual_hart;

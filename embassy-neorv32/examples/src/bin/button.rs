@@ -24,6 +24,7 @@ async fn main(_spawner: embassy_executor::Spawner) {
     let gpio = Gpio::new_async(p.GPIO, Irqs).expect("GPIO must be supported");
     let mut input = gpio.new_input(p.PORT0);
 
+    uart.blocking_write(b"Starting button example...\n");
     loop {
         input.wait_for_falling_edge().await;
         uart.blocking_write(b"Button press detected\n");
