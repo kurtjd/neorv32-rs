@@ -5,6 +5,7 @@ use core::convert::Infallible;
 use core::future::poll_fn;
 use core::marker::PhantomData;
 use core::task::Poll;
+use critical_section::CriticalSection;
 use embassy_hal_internal::{Peri, PeripheralType};
 use embassy_sync::waitqueue::AtomicWaker;
 
@@ -19,11 +20,11 @@ pub struct InterruptHandler<T: Instance> {
 
 impl<T: Instance> Handler<T::Interrupt> for InterruptHandler<T> {
     unsafe fn on_interrupt() {
-        let pending = T::reg().irq_pending().read().bits();
-        let mut disabled = T::reg().irq_enable().read().bits();
+        let pending = T::info().reg.irq_pending().read().bits();
+        let mut disabled = T::info().reg.irq_enable().read().bits();
 
         // Wake and disable every port that has IRQ pending
-        for (i, waker) in T::wakers().iter().enumerate() {
+        for (i, waker) in T::info().wakers.iter().enumerate() {
             let port_bit = 1 << i;
             if (pending & port_bit) != 0 {
                 waker.wake();
@@ -34,13 +35,17 @@ impl<T: Instance> Handler<T::Interrupt> for InterruptHandler<T> {
         // Clear pending
         // SAFETY: Register is write 0 to clear, so we bitwise not `pending` to clear only those,
         // assuring if a port becomes pending in the meantime we don't clobber it
-        T::reg()
+        T::info()
+            .reg
             .irq_pending()
             .write(|w| unsafe { w.bits(!pending) });
 
         // Disable interrupts for ports that were just pending
         // SAFETY: We've ensured we've only cleared the bits of the interrupts we actually serviced
-        T::reg().irq_enable().write(|w| unsafe { w.bits(disabled) });
+        T::info()
+            .reg
+            .irq_enable()
+            .write(|w| unsafe { w.bits(disabled) });
     }
 }
 
@@ -54,8 +59,7 @@ pub enum Error {
 
 /// GPIO driver.
 pub struct Gpio<'d, M: IoMode> {
-    reg: &'static crate::pac::gpio::RegisterBlock,
-    wakers: &'static [AtomicWaker; MAX_PORTS],
+    info: Info,
     _phantom: PhantomData<&'d M>,
 }
 
@@ -66,25 +70,24 @@ impl<'d, M: IoMode> Gpio<'d, M> {
         }
 
         Ok(Self {
-            reg: T::reg(),
-            wakers: T::wakers(),
+            info: T::info(),
             _phantom: PhantomData,
         })
     }
 
     /// Create a new instance of a port driver capable of simultaneous input and output.
     pub fn new_port<T: PortInstance>(&self, _instance: Peri<'d, T>) -> Port<'d, M> {
-        Port::new(T::PORT, self.reg, &self.wakers[T::PORT as usize])
+        Port::new(T::PORT, self.info.reg, &self.info.wakers[T::PORT as usize])
     }
 
     /// Create a new instance of an input-only port driver.
     pub fn new_input<T: PortInstance>(&self, _instance: Peri<'d, T>) -> Input<'d, M> {
-        Input::new(T::PORT, self.reg, &self.wakers[T::PORT as usize])
+        Input::new(T::PORT, self.info.reg, &self.info.wakers[T::PORT as usize])
     }
 
     /// Create a new instance of an output-only port driver.
     pub fn new_output<T: PortInstance>(&self, _instance: Peri<'d, T>) -> Output<'d> {
-        Output::new(T::PORT, self.reg)
+        Output::new(T::PORT, self.info.reg)
     }
 }
 
@@ -118,7 +121,7 @@ impl<'d> Gpio<'d, Async> {
 
 /// A GPIO port.
 ///
-/// On the neorv32, ports are bidirectional represented by two (input/output) signals under the hood,
+/// On the NEORV32, ports are bidirectional represented by two (input/output) signals under the hood,
 /// corresponding to bits PORT_IN(i) and PORT_OUT(i) respectively.
 ///
 /// Thus, a single port allows simultaneous input and output.
@@ -219,9 +222,7 @@ impl<'d> Port<'d, Async> {
 }
 
 pub struct Input<'d, M: IoMode> {
-    reg: &'static crate::pac::gpio::RegisterBlock,
-    port: u32,
-    waker: &'static AtomicWaker,
+    info: InputInfo,
     _phantom: PhantomData<&'d M>,
 }
 
@@ -234,24 +235,29 @@ impl<'d, M: IoMode> Input<'d, M> {
         reg: &'static crate::pac::gpio::RegisterBlock,
         waker: &'static AtomicWaker,
     ) -> Self {
-        Self {
+        let info = InputInfo {
+            port_mask: 1 << port,
             reg,
-            port,
             waker,
+        };
+
+        Self {
+            info,
             _phantom: PhantomData,
         }
     }
 
-    fn irq_disable(&mut self) {
+    fn irq_disable(&mut self, _cs: CriticalSection) {
         // SAFETY: We only clear our bit. This is only called in a critical section so no risk of clobbering others.
-        self.reg
+        self.info
+            .reg
             .irq_enable()
-            .modify(|r, w| unsafe { w.bits(r.bits() & !(1 << self.port)) });
+            .modify(|r, w| unsafe { w.bits(r.bits() & !self.info.port_mask) });
     }
 
     /// Returns true if the port's input signal is low.
     pub fn is_low(&self) -> bool {
-        (self.reg.port_in().read().bits() & (1 << self.port)) == 0
+        (self.info.reg.port_in().read().bits() & self.info.port_mask) == 0
     }
 
     /// Returns true if the port's input signal is high.
@@ -261,50 +267,55 @@ impl<'d, M: IoMode> Input<'d, M> {
 }
 
 impl<'d> Input<'d, Async> {
-    fn set_level_trigger(&mut self) {
+    fn set_level_trigger(&mut self, _cs: CriticalSection) {
         // SAFETY: We only clear our bit. This is only called in a critical section so no risk of clobbering others.
-        self.reg
+        self.info
+            .reg
             .irq_type()
-            .modify(|r, w| unsafe { w.bits(r.bits() & !(1 << self.port)) });
+            .modify(|r, w| unsafe { w.bits(r.bits() & !self.info.port_mask) });
     }
 
-    fn set_edge_trigger(&mut self) {
+    fn set_edge_trigger(&mut self, _cs: CriticalSection) {
         // SAFETY: We only set our bit. This is only called in a critical section so no risk of clobbering others.
-        self.reg
+        self.info
+            .reg
             .irq_type()
-            .modify(|r, w| unsafe { w.bits(r.bits() | (1 << self.port)) });
+            .modify(|r, w| unsafe { w.bits(r.bits() | self.info.port_mask) });
     }
 
-    fn set_trigger_polarity_low(&mut self) {
+    fn set_trigger_polarity_low(&mut self, _cs: CriticalSection) {
         // SAFETY: We only clear our bit. This is only called in a critical section so no risk of clobbering others.
-        self.reg
+        self.info
+            .reg
             .irq_polarity()
-            .modify(|r, w| unsafe { w.bits(r.bits() & !(1 << self.port)) });
+            .modify(|r, w| unsafe { w.bits(r.bits() & !self.info.port_mask) });
     }
 
-    fn set_trigger_polarity_high(&mut self) {
+    fn set_trigger_polarity_high(&mut self, _cs: CriticalSection) {
         // SAFETY: We only set our bit. This is only called in a critical section so no risk of clobbering others.
-        self.reg
+        self.info
+            .reg
             .irq_polarity()
-            .modify(|r, w| unsafe { w.bits(r.bits() | (1 << self.port)) });
+            .modify(|r, w| unsafe { w.bits(r.bits() | self.info.port_mask) });
     }
 
-    fn irq_enable(&mut self) {
+    fn irq_enable(&mut self, _cs: CriticalSection) {
         // SAFETY: We only set our bit. This is only called in a critical section so no risk of clobbering others.
-        self.reg
+        self.info
+            .reg
             .irq_enable()
-            .modify(|r, w| unsafe { w.bits(r.bits() | (1 << self.port)) });
+            .modify(|r, w| unsafe { w.bits(r.bits() | self.info.port_mask) });
     }
 
     fn irq_enabled(&self) -> bool {
-        (self.reg.irq_enable().read().bits() & (1 << self.port)) != 0
+        (self.info.reg.irq_enable().read().bits() & self.info.port_mask) != 0
     }
 
     async fn wait(&mut self) {
-        critical_section::with(|_| self.irq_enable());
+        critical_section::with(|cs| self.irq_enable(cs));
 
         poll_fn(|cx| {
-            self.waker.register(cx.waker());
+            self.info.waker.register(cx.waker());
 
             // If irq is disabled, we know interrupt actually fired
             if !self.irq_enabled() {
@@ -319,9 +330,9 @@ impl<'d> Input<'d, Async> {
     /// Wait until the port's input signal is low, returning immediately if it already is.
     pub async fn wait_for_low(&mut self) {
         if !self.is_low() {
-            critical_section::with(|_| {
-                self.set_level_trigger();
-                self.set_trigger_polarity_low()
+            critical_section::with(|cs| {
+                self.set_level_trigger(cs);
+                self.set_trigger_polarity_low(cs)
             });
             self.wait().await
         }
@@ -330,9 +341,9 @@ impl<'d> Input<'d, Async> {
     /// Wait until the port's input signal is high, returning immediately if it already is.
     pub async fn wait_for_high(&mut self) {
         if !self.is_high() {
-            critical_section::with(|_| {
-                self.set_level_trigger();
-                self.set_trigger_polarity_high();
+            critical_section::with(|cs| {
+                self.set_level_trigger(cs);
+                self.set_trigger_polarity_high(cs);
             });
             self.wait().await
         }
@@ -343,9 +354,9 @@ impl<'d> Input<'d, Async> {
     /// If the input signal is already low, this will not return until the signal transitions
     /// from low to high then back to low again.
     pub async fn wait_for_falling_edge(&mut self) {
-        critical_section::with(|_| {
-            self.set_edge_trigger();
-            self.set_trigger_polarity_low();
+        critical_section::with(|cs| {
+            self.set_edge_trigger(cs);
+            self.set_trigger_polarity_low(cs);
         });
         self.wait().await
     }
@@ -355,9 +366,9 @@ impl<'d> Input<'d, Async> {
     /// If the input signal is already high, this will not return until the signal transitions
     /// from high to low then back to high again.
     pub async fn wait_for_rising_edge(&mut self) {
-        critical_section::with(|_| {
-            self.set_edge_trigger();
-            self.set_trigger_polarity_high();
+        critical_section::with(|cs| {
+            self.set_edge_trigger(cs);
+            self.set_trigger_polarity_high(cs);
         });
         self.wait().await
     }
@@ -374,13 +385,12 @@ impl<'d> Input<'d, Async> {
 
 impl<'d, M: IoMode> Drop for Input<'d, M> {
     fn drop(&mut self) {
-        critical_section::with(|_| self.irq_disable());
+        critical_section::with(|cs| self.irq_disable(cs));
     }
 }
 
 pub struct Output<'d> {
-    reg: &'static crate::pac::gpio::RegisterBlock,
-    port: u32,
+    info: OutputInfo,
     _phantom: PhantomData<&'d ()>,
 }
 
@@ -389,9 +399,12 @@ unsafe impl<'d> Send for Output<'d> {}
 
 impl<'d> Output<'d> {
     fn new(port: u32, reg: &'static crate::pac::gpio::RegisterBlock) -> Self {
-        Self {
+        let info = OutputInfo {
+            port_mask: 1 << port,
             reg,
-            port,
+        };
+        Self {
+            info,
             _phantom: PhantomData,
         }
     }
@@ -409,9 +422,10 @@ impl<'d> Output<'d> {
     pub fn set_low(&mut self) {
         critical_section::with(|_| {
             // SAFETY: We only clear our bit. This is only called in a critical section so no risk of clobbering others.
-            self.reg
+            self.info
+                .reg
                 .port_out()
-                .modify(|r, w| unsafe { w.bits(r.bits() & !(1 << self.port)) })
+                .modify(|r, w| unsafe { w.bits(r.bits() & !self.info.port_mask) })
         });
     }
 
@@ -419,15 +433,16 @@ impl<'d> Output<'d> {
     pub fn set_high(&mut self) {
         critical_section::with(|_| {
             // SAFETY: We only set our bit. This is only called in a critical section so no risk of clobbering others.
-            self.reg
+            self.info
+                .reg
                 .port_out()
-                .modify(|r, w| unsafe { w.bits(r.bits() | (1 << self.port)) })
+                .modify(|r, w| unsafe { w.bits(r.bits() | self.info.port_mask) })
         });
     }
 
     /// Returns true if the port's output signal is set low.
     pub fn is_set_low(&self) -> bool {
-        (self.reg.port_out().read().bits() & (1 << self.port)) == 0
+        (self.info.reg.port_out().read().bits() & self.info.port_mask) == 0
     }
 
     /// Returns true if the port's output signal is set high.
@@ -452,9 +467,24 @@ pub struct Async;
 impl SealedIoMode for Async {}
 impl IoMode for Async {}
 
+struct Info {
+    reg: &'static crate::pac::gpio::RegisterBlock,
+    wakers: &'static [AtomicWaker; MAX_PORTS],
+}
+
+struct InputInfo {
+    port_mask: u32,
+    reg: &'static crate::pac::gpio::RegisterBlock,
+    waker: &'static AtomicWaker,
+}
+
+struct OutputInfo {
+    port_mask: u32,
+    reg: &'static crate::pac::gpio::RegisterBlock,
+}
+
 trait SealedInstance {
-    fn reg() -> &'static crate::pac::gpio::RegisterBlock;
-    fn wakers() -> &'static [AtomicWaker; MAX_PORTS];
+    fn info() -> Info;
 }
 
 /// A valid GPIO peripheral.
@@ -464,14 +494,14 @@ pub trait Instance: SealedInstance + PeripheralType {
 }
 
 impl SealedInstance for GPIO {
-    fn reg() -> &'static crate::pac::gpio::RegisterBlock {
-        // SAFETY: We have exclusive access to the GPIO register block
-        unsafe { &*crate::pac::Gpio::ptr() }
-    }
-
-    fn wakers() -> &'static [AtomicWaker; MAX_PORTS] {
+    fn info() -> Info {
         static WAKERS: [AtomicWaker; MAX_PORTS] = [const { AtomicWaker::new() }; MAX_PORTS];
-        &WAKERS
+
+        Info {
+            // SAFETY: We have exclusive access to the GPIO register block
+            reg: unsafe { &*crate::pac::Gpio::ptr() },
+            wakers: &WAKERS,
+        }
     }
 }
 impl Instance for GPIO {
