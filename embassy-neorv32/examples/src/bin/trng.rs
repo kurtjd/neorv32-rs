@@ -1,5 +1,6 @@
 #![no_std]
 #![no_main]
+
 use core::fmt::Write;
 use embassy_neorv32::bind_interrupts;
 use embassy_neorv32::peripherals;
