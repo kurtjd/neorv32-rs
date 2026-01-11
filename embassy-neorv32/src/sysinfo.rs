@@ -1,31 +1,20 @@
 //! SysInfo
-
-// As this is a read-only peripheral this driver is designed to be free-standing for ease of use
-fn reg() -> &'static crate::pac::sysinfo::RegisterBlock {
-    // SAFETY: We only use this pointer internally and do so safely
-    unsafe { &*crate::pac::Sysinfo::ptr() }
-}
+//!
+//! As this is a read-only peripheral, this driver is designed to be free-standing for ease of use.
+//! All functions can be called directly on [`SysInfo`] without needing to instantiate a singleton.
 
 /// Processor boot mode.
 #[derive(Clone, Copy, Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum BootMode {
+    /// Processor-internal BOOTROM as pre-initialized ROM.
     Bootloader,
+    /// User-defined address.
     CustomAddress,
+    /// Processor-internal IMEM as pre-initialized ROM.
     ImemImage,
+    /// Unrecognized boot mode.
     Unknown,
-}
-
-impl BootMode {
-    /// Returns the boot made as a static string.
-    pub fn as_str(&self) -> &'static str {
-        match self {
-            Self::Bootloader => "Bootloader",
-            Self::CustomAddress => "Custom Address",
-            Self::ImemImage => "IMEM Image",
-            Self::Unknown => "Unknown",
-        }
-    }
 }
 
 impl From<u8> for BootMode {
@@ -39,11 +28,17 @@ impl From<u8> for BootMode {
     }
 }
 
-/// SoC Configuration.
+/// SoC configuration.
 #[derive(Clone, Copy, Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct SocConfig(u32);
+
 impl SocConfig {
+    #[inline(always)]
+    fn supported(&self, i: u32) -> bool {
+        self.0 & (1 << i) != 0
+    }
+
     /// Returns raw 32-bit SoC config.
     pub fn raw(&self) -> u32 {
         self.0
@@ -51,146 +46,146 @@ impl SocConfig {
 
     /// Returns true if processor-internal bootloader is implemented.
     pub fn bootloader(&self) -> bool {
-        self.0 & (1 << 0) != 0
+        self.supported(0)
     }
 
     /// Returns true if external bus interface (XBUS) is implemented.
     pub fn xbus(&self) -> bool {
-        self.0 & (1 << 1) != 0
+        self.supported(1)
     }
 
     /// Returns true if processor-internal IMEM is implemented.
     pub fn imem(&self) -> bool {
-        self.0 & (1 << 2) != 0
+        self.supported(2)
     }
 
     /// Returns true if processor-internal DMEM is implemented.
     pub fn dmem(&self) -> bool {
-        self.0 & (1 << 3) != 0
+        self.supported(3)
     }
 
     /// Returns true if on-chip debugger is implemented.
     pub fn ocd(&self) -> bool {
-        self.0 & (1 << 4) != 0
+        self.supported(4)
     }
 
     /// Returns true if processor-internal instruction cache is implemented.
     pub fn icache(&self) -> bool {
-        self.0 & (1 << 5) != 0
+        self.supported(5)
     }
 
     /// Returns true if processor-internal data cache is implemented.
     pub fn dcache(&self) -> bool {
-        self.0 & (1 << 6) != 0
+        self.supported(6)
     }
 
     /// Returns true if on-chip debugger authentication is implemented.
     pub fn ocd_auth(&self) -> bool {
-        self.0 & (1 << 11) != 0
+        self.supported(11)
     }
 
     /// Returns true if processor-internal IMEM is implemented as pre-initialized ROM.
     pub fn imem_as_rom(&self) -> bool {
-        self.0 & (1 << 12) != 0
+        self.supported(12)
     }
 
     /// Returns true if TWD is implemented.
     pub fn twd(&self) -> bool {
-        self.0 & (1 << 13) != 0
+        self.supported(13)
     }
 
     /// Returns true if DMA is implemented.
     pub fn dma(&self) -> bool {
-        self.0 & (1 << 14) != 0
+        self.supported(14)
     }
 
     /// Returns true if GPIO is implemented.
     pub fn gpio(&self) -> bool {
-        self.0 & (1 << 15) != 0
+        self.supported(15)
     }
 
     /// Returns true if CLINT is implemented.
     pub fn clint(&self) -> bool {
-        self.0 & (1 << 16) != 0
+        self.supported(16)
     }
 
     /// Returns true if UART0 is implemented.
     pub fn uart0(&self) -> bool {
-        self.0 & (1 << 17) != 0
+        self.supported(17)
     }
 
     /// Returns true if SPI is implemented.
     pub fn spi(&self) -> bool {
-        self.0 & (1 << 18) != 0
+        self.supported(18)
     }
 
     /// Returns true if TWI is implemented.
     pub fn twi(&self) -> bool {
-        self.0 & (1 << 19) != 0
+        self.supported(19)
     }
 
     /// Returns true if PWM is implemented.
     pub fn pwm(&self) -> bool {
-        self.0 & (1 << 20) != 0
+        self.supported(20)
     }
 
     /// Returns true if WDT is implemented.
     pub fn wdt(&self) -> bool {
-        self.0 & (1 << 21) != 0
+        self.supported(21)
     }
 
     /// Returns true if CFS is implemented.
     pub fn cfs(&self) -> bool {
-        self.0 & (1 << 22) != 0
+        self.supported(22)
     }
 
     /// Returns true if TRNG is implemented.
     pub fn trng(&self) -> bool {
-        self.0 & (1 << 23) != 0
+        self.supported(23)
     }
 
     /// Returns true if SDI is implemented.
     pub fn sdi(&self) -> bool {
-        self.0 & (1 << 24) != 0
+        self.supported(24)
     }
 
     /// Returns true if UART1 is implemented.
     pub fn uart1(&self) -> bool {
-        self.0 & (1 << 25) != 0
+        self.supported(25)
     }
 
     /// Returns true if NEOLED is implemented.
     pub fn neoled(&self) -> bool {
-        self.0 & (1 << 26) != 0
+        self.supported(26)
     }
 
     /// Returns true if TRACER is implemented.
     pub fn tracer(&self) -> bool {
-        self.0 & (1 << 27) != 0
+        self.supported(27)
     }
 
     /// Returns true if GPTMR is implemented.
     pub fn gptmr(&self) -> bool {
-        self.0 & (1 << 28) != 0
+        self.supported(28)
     }
 
     /// Returns true if SLINK is implemented.
     pub fn slink(&self) -> bool {
-        self.0 & (1 << 29) != 0
+        self.supported(29)
     }
 
     /// Returns true if ONEWIRE is implemented.
     pub fn onewire(&self) -> bool {
-        self.0 & (1 << 30) != 0
+        self.supported(30)
     }
 
     /// Returns true if NEORV32 is being simulated.
     pub fn simulation(&self) -> bool {
-        self.0 & (1 << 31) != 0
+        self.supported(31)
     }
 }
 
-/// SysInfo Driver
+/// SysInfo driver
 #[derive(Clone, Copy, Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct SysInfo;
@@ -238,4 +233,9 @@ impl SysInfo {
     pub fn soc_config() -> SocConfig {
         SocConfig(reg().soc().read().bits())
     }
+}
+
+fn reg() -> &'static crate::pac::sysinfo::RegisterBlock {
+    // SAFETY: We only use this pointer internally and do so safely
+    unsafe { &*crate::pac::Sysinfo::ptr() }
 }

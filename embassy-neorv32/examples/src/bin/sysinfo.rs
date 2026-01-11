@@ -27,7 +27,7 @@ async fn main(_spawner: embassy_executor::Spawner) {
 
     // Print misc info
     writeln!(&mut uart, "Num harts: {}", SysInfo::num_harts()).unwrap();
-    writeln!(&mut uart, "Boot mode: {}", SysInfo::boot_mode().as_str()).unwrap();
+    writeln!(&mut uart, "Boot mode: {:?}", SysInfo::boot_mode()).unwrap();
     writeln!(
         &mut uart,
         "Internal bus timeout cycles: {}",
