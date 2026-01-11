@@ -21,7 +21,7 @@ The HAL currently supports the following peripherals and features:
 - SYSINFO
 
 ### Additional Features
-- Dual-core support
+- Dual-hart support
 - Embassy time-driver via CLINT `mtimer`
 
 Additional peripheral support and features may be added if there is community interest!

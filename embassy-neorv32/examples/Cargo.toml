@@ -14,9 +14,9 @@ panic = "abort"
 incremental = false
 
 [features]
-default = ["single-core", "sim"]
-single-core = ["embassy-executor/arch-riscv32", "embassy-neorv32/single-core"]
-dual-core = ["embassy-neorv32/dual-core"]
+default = ["single-hart", "sim"]
+single-hart = ["embassy-executor/arch-riscv32", "embassy-neorv32/single-hart"]
+dual-hart = ["embassy-neorv32/dual-hart"]
 
 # *Note*: The time-driver implementation relies on the CLINT mtimer which always runs at
 # CPU frequency. Unfortunately, embassy-time requires us to pick a fixed static tick rate,

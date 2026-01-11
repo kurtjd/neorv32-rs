@@ -1,4 +1,4 @@
-//! Dual-core support.
+//! Dual-Hart Support
 //!
 //! This module provides a function for starting hart 1 and all the additional neccessary functionality
 //! to safely support that (such as a custom executor and critical section).
@@ -8,7 +8,7 @@
 //! side, for now it is recommended that peripherals are only instantiated in the hart they will be used
 //! and not moved.
 //!
-//! Ensure the `dual-core` feature is enabled to use this.
+//! Ensure the `dual-hart` feature is enabled to use this.
 use super::pac;
 use core::mem::{ManuallyDrop, transmute};
 use embassy_hal_internal::Peri;
@@ -54,7 +54,7 @@ core::arch::global_asm!(
 fn hart_main(hart_id: usize, _: usize, _: usize) -> ! {
     // CLINT is used for software interrupts which is necessary for inter-hart communication
     if !crate::sysinfo::SysInfo::soc_config().clint() {
-        panic!("CLINT must be supported for dual-core to work");
+        panic!("CLINT must be supported for dual-hart to work");
     }
 
     // Ensure global interrupts are enabled before entering user entry points
@@ -355,9 +355,9 @@ pub mod executor {
         sev();
     }
 
-    /// Custom executor for dual-core NEORV32.
+    /// Custom executor for dual-hart NEORV32.
     ///
-    /// This is necessary because the default rv32 executor provided by Embassy is not sufficient for dual-core use.
+    /// This is necessary because the default rv32 executor provided by Embassy is not sufficient for dual-hart use.
     /// It lacks the functionality to wake other harts from sleep when a task they are waiting on is ready to be polled again.
     ///
     /// This executor makes use of software interrupts to wake each hart when there is work to be done,
@@ -365,7 +365,7 @@ pub mod executor {
     ///
     /// This can be used with the `#[embassy_executor::main]` macro like so:
     ///
-    /// `#[embassy_executor::main(executor = "embassy_neorv32::dualcore::executor::Executor", entry = "riscv_rt::entry")]`
+    /// `#[embassy_executor::main(executor = "embassy_neorv32::dual_hart::executor::Executor", entry = "riscv_rt::entry")]`
     pub struct Executor {
         inner: raw::Executor,
         not_send: PhantomData<*mut ()>,
@@ -378,7 +378,7 @@ pub mod executor {
     }
 
     impl Executor {
-        /// Create a new dual-core executor.
+        /// Create a new dual-hart executor.
         ///
         /// It is recommended to use the `#[embassy_executor::main]` macro for hart 0 and the
         /// [`hart1_start_with_executor`] function for hart 1 to avoid creating an executor manually.

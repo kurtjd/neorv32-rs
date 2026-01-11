@@ -1,33 +1,33 @@
 [alias]
 # Run examples
-run-sim = "run --config .cargo/runner.sim.toml --no-default-features --features single-core,sim"
-run-fpga = "run --config .cargo/runner.fpga.toml --no-default-features --features single-core,fpga"
-run-dc-sim = "run --config .cargo/runner.sim.toml --no-default-features --features dual-core,sim"
-run-dc-fpga = "run --config .cargo/runner.fpga.toml --no-default-features --features dual-core,fpga"
+run-sim = "run --config .cargo/runner.sim.toml --no-default-features --features single-hart,sim"
+run-fpga = "run --config .cargo/runner.fpga.toml --no-default-features --features single-hart,fpga"
+run-dh-sim = "run --config .cargo/runner.sim.toml --no-default-features --features dual-hart,sim"
+run-dh-fpga = "run --config .cargo/runner.fpga.toml --no-default-features --features dual-hart,fpga"
 
 # Build examples
-build-sim = "build --no-default-features --features single-core,sim"
-build-fpga = "build --no-default-features --features single-core,fpga"
-build-dc-sim = "build --no-default-features --features dual-core,sim"
-build-dc-fpga = "build --no-default-features --features dual-core,fpga"
+build-sim = "build --no-default-features --features single-hart,sim"
+build-fpga = "build --no-default-features --features single-hart,fpga"
+build-dh-sim = "build --no-default-features --features dual-hart,sim"
+build-dh-fpga = "build --no-default-features --features dual-hart,fpga"
 
 # Report binary size of examples
-size-sim = "size --no-default-features --features single-core,sim,"
-size-fpga = "size --no-default-features --features single-core,fpga"
-size-dc-sim = "size --no-default-features --features dual-core,sim,"
-size-dc-fpga = "size --no-default-features --features dual-core,fpga"
+size-sim = "size --no-default-features --features single-hart,sim,"
+size-fpga = "size --no-default-features --features single-hart,fpga"
+size-dh-sim = "size --no-default-features --features dual-hart,sim,"
+size-dh-fpga = "size --no-default-features --features dual-hart,fpga"
 
 # Display symbols of examples
-nm-sim = "nm --no-default-features --features single-core,sim,"
-nm-fpga = "nm --no-default-features --features single-core,fpga"
-nm-dc-sim = "nm --no-default-features --features dual-core,sim,"
-nm-dc-fpga = "nm --no-default-features --features dual-core,fpga"
+nm-sim = "nm --no-default-features --features single-hart,sim,"
+nm-fpga = "nm --no-default-features --features single-hart,fpga"
+nm-dh-sim = "nm --no-default-features --features dual-hart,sim,"
+nm-dh-fpga = "nm --no-default-features --features dual-hart,fpga"
 
 # Perform objdump on examples
-objdump-sim = "objdump --no-default-features --features single-core,sim,"
-objdump-fpga = "objdump --no-default-features --features single-core,fpga"
-objdump-dc-sim = "objdump --no-default-features --features dual-core,sim,"
-objdump-dc-fpga = "objdump --no-default-features --features dual-core,fpga"
+objdump-sim = "objdump --no-default-features --features single-hart,sim,"
+objdump-fpga = "objdump --no-default-features --features single-hart,fpga"
+objdump-dh-sim = "objdump --no-default-features --features dual-hart,sim,"
+objdump-dh-fpga = "objdump --no-default-features --features dual-hart,fpga"
 
 # Target can be modified depending on which extensions your NEORV32 config supports
 [build]

@@ -1,9 +1,9 @@
-//! Time Driver.
+//! Time Driver
 //!
 //! Uses the CLINT MTIMER peripheral to manage time.
-//! This is intended to work on both a single-core and dual-core configuration.
+//! This is intended to work on both a single-hart and dual-hart configuration.
 //!
-//! In the case of dual-core, hart 0 will always be the owner of time-keeping,
+//! In the case of dual-hart, hart 0 will always be the owner of time-keeping,
 //! and is solely responsible for handling timer interrupts and waking tasks
 //! as appropriate on both harts' executors.
 use core::cell::RefCell;
@@ -19,11 +19,6 @@ embassy_time_driver::time_driver_impl!(static DRIVER: MtimerDriver = MtimerDrive
 #[riscv_rt::core_interrupt(crate::pac::interrupt::CoreInterrupt::MachineTimer)]
 fn machine_timer_handler() {
     DRIVER.on_interrupt()
-}
-
-fn clint() -> crate::pac::Clint {
-    // SAFETY: We are the only ones who use mtimecmp0 and mtimer, so we can manage it safely
-    unsafe { crate::pac::Clint::steal() }
 }
 
 struct MtimerDriver {
@@ -88,4 +83,9 @@ impl Driver for MtimerDriver {
             }
         })
     }
+}
+
+fn clint() -> crate::pac::Clint {
+    // SAFETY: We are the only ones who use mtimecmp0 and mtimer, so we can manage it safely
+    unsafe { crate::pac::Clint::steal() }
 }

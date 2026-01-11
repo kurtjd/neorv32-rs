@@ -1,8 +1,8 @@
 #![doc = include_str!("../README.md")]
 #![no_std]
 pub mod dma;
-#[cfg(feature = "dual-core")]
-pub mod dualcore;
+#[cfg(feature = "dual-hart")]
+pub mod dual_hart;
 pub mod gpio;
 pub mod interrupts;
 pub mod pwm;
@@ -20,7 +20,6 @@ mod chip {
     #[rustfmt::skip]
     embassy_hal_internal::peripherals!(
         HART1,
-        CLINT,
         WDT,
         UART0, UART1,
         TRNG,
@@ -51,19 +50,23 @@ pub use neorv32_pac as pac;
 /// # Panics
 ///
 /// Panics if this has already been called once before or not called from hart 0.
+///
+/// Panics if `time-driver` feature is enabled but `CLINT` is not supported.
 pub fn init() -> Peripherals {
     // Attempt to take first so we panic before doing anything else
     let p = Peripherals::take();
 
-    // In dual-core, global interrupts are enabled in hart_main()
-    // So for single-core just enable them now
-    #[cfg(feature = "single-core")]
+    // In dual-hart, global interrupts are enabled in hart_main()
+    // So for single-hart just enable them now
     // SAFETY: We're not worried about breaking any critical sections here
+    #[cfg(feature = "single-hart")]
     unsafe {
         riscv::interrupt::enable()
     }
 
+    #[cfg(feature = "time-driver")]
     time_driver::init();
+
     p
 }
 

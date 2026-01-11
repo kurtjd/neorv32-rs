@@ -1,13 +1,13 @@
 //! To run this example, use:
-//! `cargo run-dc-sim --release --bin dualcore`
+//! `cargo run-dh-sim --release --bin dual-hart`
 #![no_std]
 #![no_main]
 
-#[cfg(not(feature = "dual-core"))]
-compile_error!("The `dual-core` feature must be supported.");
+#[cfg(not(feature = "dual-hart"))]
+compile_error!("The `dual-hart` feature must be supported.");
 
 use core::fmt::Write;
-use embassy_neorv32::dualcore;
+use embassy_neorv32::dual_hart;
 use embassy_neorv32::trng::{self, Trng};
 use embassy_neorv32::uart::{self, UartTx};
 use embassy_neorv32::{bind_interrupts, peripherals};
@@ -60,9 +60,9 @@ async fn hart1_task(uart: &'static SharedUart, mut trng: Trng<'static, trng::Asy
     }
 }
 
-// Dual-core support requires a custom Embassy executor (provided by the HAL), so we just need to use it here
+// Dual-hart support requires a custom Embassy executor (provided by the HAL), so we just need to use it here
 // We have to then also explicitly state we want to use the riscv-rt entry
-#[embassy_executor::main(executor = "dualcore::executor::Executor", entry = "riscv_rt::entry")]
+#[embassy_executor::main(executor = "dual_hart::executor::Executor", entry = "riscv_rt::entry")]
 async fn main(spawner: embassy_executor::Spawner) {
     let p = embassy_neorv32::init();
 
@@ -75,7 +75,7 @@ async fn main(spawner: embassy_executor::Spawner) {
         .await
         .unwrap();
 
-    dualcore::hart1_start_with_executor(p.HART1, |spawner| {
+    dual_hart::hart1_start_with_executor(p.HART1, |spawner| {
         let trng = Trng::new_async(p.TRNG, Irqs).expect("TRNG must be supported");
         spawner.must_spawn(hart1_task(uart, trng));
     });
