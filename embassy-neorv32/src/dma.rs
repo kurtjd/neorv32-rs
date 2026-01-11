@@ -8,6 +8,8 @@ use core::task::{Context, Poll};
 use embassy_hal_internal::{Peri, PeripheralType};
 use embassy_sync::waitqueue::AtomicWaker;
 
+const U23_MAX: u32 = 0xff_ffff;
+
 /// DMA interrupt handler binding.
 pub struct InterruptHandler<T: Instance> {
     _phantom: PhantomData<T>,
@@ -16,13 +18,18 @@ pub struct InterruptHandler<T: Instance> {
 impl<T: Instance> Handler<T::Interrupt> for InterruptHandler<T> {
     unsafe fn on_interrupt() {
         // Acking the interrupt clears both the ERROR and DONE flags.
-        // In poll, we can check the BUSY flag to know if we are done, but still need a way to check for bus error.
+        // In poll, we can check the BUSY flag to know if we are done,
+        // but still need a way to check for bus error.
+        //
         // So we cache the ERROR flag before clearing it.
-        let err = T::reg().ctrl().read().dma_ctrl_error().bit_is_set();
-        T::err_flag().store(err, Ordering::SeqCst);
-        T::reg().ctrl().modify(|_, w| w.dma_ctrl_ack().set_bit());
+        let err = T::info().reg.ctrl().read().dma_ctrl_error().bit_is_set();
+        T::info().err_flag.store(err, Ordering::Release);
+        T::info()
+            .reg
+            .ctrl()
+            .modify(|_, w| w.dma_ctrl_ack().set_bit());
 
-        T::waker().wake();
+        T::info().waker.wake();
     }
 }
 
@@ -69,7 +76,7 @@ impl TransferConfig {
         dst_cfg: DataConfig,
     ) -> Self {
         // Hardware only supports 23 bits for num elements
-        assert!(num_elems > 0 && num_elems < 0xff_ffff);
+        assert!(num_elems > 0 && num_elems < U23_MAX);
         Self {
             num_elems,
             swap_byte_order,
@@ -84,7 +91,7 @@ impl From<TransferConfig> for u32 {
         (u32::from(config.dst_cfg) << 30)
             | (u32::from(config.src_cfg) << 28)
             | ((config.swap_byte_order as u32) << 27)
-            | (config.num_elems & 0xff_ffff)
+            | (config.num_elems & U23_MAX)
     }
 }
 
@@ -102,11 +109,11 @@ impl From<Descriptor> for u32 {
     }
 }
 
-/// Single-channel Direct Memory Access (DMA) driver.
+/// DMA driver.
+///
+/// DMA is single-channel only so so the entire peripheral may only have a single owner.
 pub struct Dma<'d> {
-    reg: &'static crate::pac::dma::RegisterBlock,
-    waker: &'static AtomicWaker,
-    err_flag: &'static AtomicBool,
+    info: Info,
     _phantom: PhantomData<&'d ()>,
 }
 
@@ -114,6 +121,45 @@ pub struct Dma<'d> {
 unsafe impl<'d> Send for Dma<'d> {}
 
 impl<'d> Dma<'d> {
+    fn enable(&mut self) {
+        self.info
+            .reg
+            .ctrl()
+            .modify(|_, w| w.dma_ctrl_en().set_bit());
+    }
+
+    fn disable(&mut self) {
+        self.info
+            .reg
+            .ctrl()
+            .modify(|_, w| w.dma_ctrl_en().clear_bit());
+    }
+
+    fn start(&mut self) {
+        self.info
+            .reg
+            .ctrl()
+            .modify(|_, w| w.dma_ctrl_start().set_bit());
+    }
+
+    fn write_descriptor(&mut self, descriptor: Descriptor) {
+        // SAFETY: We are writing a valid descriptor
+        self.info
+            .reg
+            .desc()
+            .write(|w| unsafe { w.bits(descriptor.into()) });
+    }
+
+    fn busy(&self) -> bool {
+        self.info.reg.ctrl().read().dma_ctrl_busy().bit_is_set()
+    }
+
+    fn abort(&mut self) {
+        // Disable DMA and flush cache to ensure CPU sees most recent main memory
+        self.disable();
+        fence(Ordering::SeqCst);
+    }
+
     /// Creates a new instance of a DMA driver.
     ///
     /// # Errors
@@ -131,18 +177,16 @@ impl<'d> Dma<'d> {
         unsafe { T::Interrupt::enable() }
 
         Ok(Self {
-            reg: T::reg(),
-            waker: T::waker(),
-            err_flag: T::err_flag(),
+            info: T::info(),
             _phantom: PhantomData,
         })
     }
 
-    /// Starts a transfer which reads from src until the dst buffer is filled.
+    /// Starts a transfer which reads from `src` until the `dst` buffer is filled.
     ///
     /// # Panics
     ///
-    /// Panics if the dst buffer length is greater than u23 max.
+    /// Panics if the `dst` buffer length can not be represented in 23 bits.
     pub fn read<'t, W: Word>(
         &'t mut self,
         src: &W,
@@ -160,11 +204,11 @@ impl<'d> Dma<'d> {
         )
     }
 
-    /// Starts a transfer which writes all elements from the src buffer to dst.
+    /// Starts a transfer which writes all elements from the `src` buffer to `dst`.
     ///
     /// # Panics
     ///
-    /// Panics if the src buffer length is greater than u23 max.
+    /// Panics if the `src` buffer length can not be represented in 23 bits.
     pub fn write<'t, W: Word>(
         &'t mut self,
         src: &[W],
@@ -182,12 +226,12 @@ impl<'d> Dma<'d> {
         )
     }
 
-    /// Starts a transfer which copies all elements from the src buffer to the dst buffer.
+    /// Starts a transfer which copies all elements from the `src` buffer to the `dst` buffer.
     ///
     /// # Panics
     ///
-    /// Panics if the src buffer length does not match the dst buffer length,
-    /// or if the buffer length is greater than u23 max.
+    /// Panics if the `src` buffer length does not match the `dst` buffer length,
+    /// or if the buffer length can not be represented in 23 bits.
     pub fn copy<'t, W: Word>(
         &'t mut self,
         src: &[W],
@@ -204,35 +248,6 @@ impl<'d> Dma<'d> {
             src.len() as u32,
             swap_byte_order,
         )
-    }
-
-    fn enable(&mut self) {
-        self.reg.ctrl().modify(|_, w| w.dma_ctrl_en().set_bit());
-    }
-
-    fn disable(&mut self) {
-        self.reg.ctrl().modify(|_, w| w.dma_ctrl_en().clear_bit());
-    }
-
-    fn start(&mut self) {
-        self.reg.ctrl().modify(|_, w| w.dma_ctrl_start().set_bit());
-    }
-
-    fn write_descriptor(&mut self, descriptor: Descriptor) {
-        // SAFETY: We are writing a valid descriptor
-        self.reg
-            .desc()
-            .write(|w| unsafe { w.bits(descriptor.into()) });
-    }
-
-    fn busy(&self) -> bool {
-        self.reg.ctrl().read().dma_ctrl_busy().bit_is_set()
-    }
-
-    fn abort(&mut self) {
-        // Disable DMA and flush cache to ensure CPU sees most recent main memory
-        self.disable();
-        fence(Ordering::SeqCst);
     }
 }
 
@@ -263,7 +278,7 @@ impl<'d, 't> Transfer<'d, 't> {
         swap_byte_order: bool,
     ) -> Self {
         // Clear error flag and enable DMA
-        dma.err_flag.store(false, Ordering::SeqCst);
+        dma.info.err_flag.store(false, Ordering::Release);
         dma.enable();
 
         // Configure the transfer
@@ -298,11 +313,11 @@ impl<'d, 't> Drop for Transfer<'d, 't> {
 impl<'d, 't> Future for Transfer<'d, 't> {
     type Output = Result<(), Error>;
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
-        self.dma.waker.register(cx.waker());
+        self.dma.info.waker.register(cx.waker());
 
         if self.dma.busy() {
             Poll::Pending
-        } else if self.dma.err_flag.load(Ordering::SeqCst) {
+        } else if self.dma.info.err_flag.load(Ordering::Acquire) {
             Poll::Ready(Err(Error::BusError))
         } else {
             Poll::Ready(Ok(()))
@@ -316,6 +331,11 @@ trait SealedWord {
 }
 
 /// A DMA transfer word.
+///
+/// **Note**: The hardware supports transferring `u8` to `u32` (by zero-extending the `u8`),
+/// but does not seem to support transferring `u32` to `u8` (ideally it would truncate the 24 MSB).
+///
+/// So, for ease of use, the driver only supports `u8` <-> `u8` and `u32` <-> `u32` transfers.
 #[allow(private_bounds)]
 pub trait Word: SealedWord {}
 
@@ -341,10 +361,14 @@ impl SealedWord for u32 {
 }
 impl Word for u32 {}
 
+struct Info {
+    reg: &'static crate::pac::dma::RegisterBlock,
+    waker: &'static AtomicWaker,
+    err_flag: &'static AtomicBool,
+}
+
 trait SealedInstance {
-    fn reg() -> &'static crate::pac::dma::RegisterBlock;
-    fn waker() -> &'static AtomicWaker;
-    fn err_flag() -> &'static AtomicBool;
+    fn info() -> Info;
 }
 
 /// A valid DMA peripheral.
@@ -352,19 +376,18 @@ trait SealedInstance {
 pub trait Instance: SealedInstance + PeripheralType {
     type Interrupt: Interrupt;
 }
+
 impl SealedInstance for DMA {
-    fn reg() -> &'static crate::pac::dma::RegisterBlock {
-        unsafe { &*crate::pac::Dma::ptr() }
-    }
-
-    fn waker() -> &'static AtomicWaker {
+    fn info() -> Info {
         static WAKER: AtomicWaker = AtomicWaker::new();
-        &WAKER
-    }
-
-    fn err_flag() -> &'static AtomicBool {
         static ERR_FLAG: AtomicBool = AtomicBool::new(false);
-        &ERR_FLAG
+
+        Info {
+            // SAFETY: We are the sole users of the pointer and are sure to use it safely
+            reg: unsafe { &*crate::pac::Dma::ptr() },
+            waker: &WAKER,
+            err_flag: &ERR_FLAG,
+        }
     }
 }
 impl Instance for DMA {
