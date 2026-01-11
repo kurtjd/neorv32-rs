@@ -1,9 +1,16 @@
-//! Peripheral interrupts
+//! Peripheral Interrupts
+//!
+//! A lot of this is taken from `embassy-hal-internal` but tweaked for RISC-V.
+//! Ideally most of this could be merged back into `embassy-hal-internal`, but RISC-V interrupt
+//! handling can be a bit platform-dependent so will need to consider how to make it more
+//! flexible for all RISC-V platforms. For example, the NEORV32 contains custom `CoreInterrupt`
+//! sources for peripheral interrupts but on some platforms these might be external interrupts
+//! managed by a PLIC.
 
 /// Macro to bind interrupts to handlers.
 ///
 /// This defines the right interrupt handlers, and creates a unit struct (like `struct Irqs;`)
-/// and implements the right \[`Binding`\]s for it. You can pass this struct to drivers to
+/// and implements the right binding for it. You can pass this struct to drivers to
 /// prove at compile-time that the right interrupts have been bound.
 ///
 /// Example of how to bind one interrupt:
@@ -39,11 +46,11 @@ macro_rules! bind_interrupts {
     };
 }
 
-/// Generate a standard `mod interrupt` for a RISCV HAL.
+/// Generate a standard `mod interrupt` for a RISC-V HAL.
 #[macro_export]
 macro_rules! interrupt_mod {
     ($($irqs:ident),* $(,)?) => {
-        /// Interrupt definitions
+        /// Interrupt definitions.
         pub mod interrupt {
             pub use $crate::pac::interrupt::CoreInterrupt;
 
@@ -52,9 +59,8 @@ macro_rules! interrupt_mod {
             /// This module contains one *type* per interrupt. This is used for checking at compile time that
             /// the interrupts are correctly bound to HAL drivers.
             ///
-            /// As an end user, you shouldn't need to use this module directly. Use the [`crate::bind_interrupts!`] macro
-            /// to bind interrupts, and the [`crate::interrupt`] module to manually register interrupt handlers and manipulate
-            /// interrupts directly (pending/unpending, enabling/disabling, setting the priority, etc...)
+            /// As an end user, you shouldn't need to use this module directly.
+            /// Use the [`crate::bind_interrupts!`] macro to bind interrupts.
             pub mod typelevel {
                 trait SealedInterrupt {}
 
