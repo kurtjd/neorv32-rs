@@ -40,20 +40,20 @@ the `tick-hz` feature for `embassy-time` matches your configuration
 - Continue with one of the series of steps below depending on if running in simulation or on FPGA
 
 ### Simulation
-- Modify `BASE` in `examples/run-sim` to your `neorv32` repo path
+- Modify `BASE` in `examples/run-sim` to your `neorv32` repo path (default in `$HOME` folder)
 - Install [GHDL](https://github.com/ghdl/ghdl) simulator
 - From examples folder, run `cargo run-sim --release --bin hello-world`
 - For more help, see [simulating the processor](https://stnolting.github.io/neorv32/ug/#_simulating_the_processor)
 
 ### FPGA over UART bootloader
-- Modify `BASE` in `examples/run-fpga` to your `neorv32` repo path
+- Modify `BASE` in `examples/run-fpga` to your `neorv32` repo path (default in `$HOME` folder)
 - Install `picocom` (or modify `run-fpga` to use your preferred tool)
 - From the `examples` folder, run `cargo run-fpga --release --bin hello-world`
 - Press reset button on FPGA
 - If using `picocom`, manually follow these steps within host terminal:
 - Type: Any key
 - Type: `u` (Upload)
-- Type: `Ctrl+A Ctrl+S` (send file)
+- Type: `<Ctrl+A> <Ctrl+S>` (send file)
 - Type: `hello-world-fpga <Enter>`
 - Wait for upload to complete (should see `*** exit status: 0 *** OK`)
 - Type: `e` (Execute)

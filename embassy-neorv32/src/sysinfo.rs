@@ -35,7 +35,7 @@ pub struct SocConfig(u32);
 
 impl SocConfig {
     #[inline(always)]
-    fn supported(&self, i: u32) -> bool {
+    fn is_supported(&self, i: u32) -> bool {
         self.0 & (1 << i) != 0
     }
 
@@ -45,143 +45,143 @@ impl SocConfig {
     }
 
     /// Returns true if processor-internal bootloader is implemented.
-    pub fn bootloader(&self) -> bool {
-        self.supported(0)
+    pub fn has_bootloader(&self) -> bool {
+        self.is_supported(0)
     }
 
     /// Returns true if external bus interface (XBUS) is implemented.
-    pub fn xbus(&self) -> bool {
-        self.supported(1)
+    pub fn has_xbus(&self) -> bool {
+        self.is_supported(1)
     }
 
     /// Returns true if processor-internal IMEM is implemented.
-    pub fn imem(&self) -> bool {
-        self.supported(2)
+    pub fn has_imem(&self) -> bool {
+        self.is_supported(2)
     }
 
     /// Returns true if processor-internal DMEM is implemented.
-    pub fn dmem(&self) -> bool {
-        self.supported(3)
+    pub fn has_dmem(&self) -> bool {
+        self.is_supported(3)
     }
 
     /// Returns true if on-chip debugger is implemented.
-    pub fn ocd(&self) -> bool {
-        self.supported(4)
+    pub fn has_ocd(&self) -> bool {
+        self.is_supported(4)
     }
 
     /// Returns true if processor-internal instruction cache is implemented.
-    pub fn icache(&self) -> bool {
-        self.supported(5)
+    pub fn has_icache(&self) -> bool {
+        self.is_supported(5)
     }
 
     /// Returns true if processor-internal data cache is implemented.
-    pub fn dcache(&self) -> bool {
-        self.supported(6)
+    pub fn has_dcache(&self) -> bool {
+        self.is_supported(6)
     }
 
     /// Returns true if on-chip debugger authentication is implemented.
-    pub fn ocd_auth(&self) -> bool {
-        self.supported(11)
+    pub fn has_ocd_auth(&self) -> bool {
+        self.is_supported(11)
     }
 
     /// Returns true if processor-internal IMEM is implemented as pre-initialized ROM.
-    pub fn imem_as_rom(&self) -> bool {
-        self.supported(12)
+    pub fn has_imem_as_rom(&self) -> bool {
+        self.is_supported(12)
     }
 
     /// Returns true if TWD is implemented.
-    pub fn twd(&self) -> bool {
-        self.supported(13)
+    pub fn has_twd(&self) -> bool {
+        self.is_supported(13)
     }
 
     /// Returns true if DMA is implemented.
-    pub fn dma(&self) -> bool {
-        self.supported(14)
+    pub fn has_dma(&self) -> bool {
+        self.is_supported(14)
     }
 
     /// Returns true if GPIO is implemented.
-    pub fn gpio(&self) -> bool {
-        self.supported(15)
+    pub fn has_gpio(&self) -> bool {
+        self.is_supported(15)
     }
 
     /// Returns true if CLINT is implemented.
-    pub fn clint(&self) -> bool {
-        self.supported(16)
+    pub fn has_clint(&self) -> bool {
+        self.is_supported(16)
     }
 
     /// Returns true if UART0 is implemented.
-    pub fn uart0(&self) -> bool {
-        self.supported(17)
+    pub fn has_uart0(&self) -> bool {
+        self.is_supported(17)
     }
 
     /// Returns true if SPI is implemented.
-    pub fn spi(&self) -> bool {
-        self.supported(18)
+    pub fn has_spi(&self) -> bool {
+        self.is_supported(18)
     }
 
     /// Returns true if TWI is implemented.
-    pub fn twi(&self) -> bool {
-        self.supported(19)
+    pub fn has_twi(&self) -> bool {
+        self.is_supported(19)
     }
 
     /// Returns true if PWM is implemented.
-    pub fn pwm(&self) -> bool {
-        self.supported(20)
+    pub fn has_pwm(&self) -> bool {
+        self.is_supported(20)
     }
 
     /// Returns true if WDT is implemented.
-    pub fn wdt(&self) -> bool {
-        self.supported(21)
+    pub fn has_wdt(&self) -> bool {
+        self.is_supported(21)
     }
 
     /// Returns true if CFS is implemented.
-    pub fn cfs(&self) -> bool {
-        self.supported(22)
+    pub fn has_cfs(&self) -> bool {
+        self.is_supported(22)
     }
 
     /// Returns true if TRNG is implemented.
-    pub fn trng(&self) -> bool {
-        self.supported(23)
+    pub fn has_trng(&self) -> bool {
+        self.is_supported(23)
     }
 
     /// Returns true if SDI is implemented.
-    pub fn sdi(&self) -> bool {
-        self.supported(24)
+    pub fn has_sdi(&self) -> bool {
+        self.is_supported(24)
     }
 
     /// Returns true if UART1 is implemented.
-    pub fn uart1(&self) -> bool {
-        self.supported(25)
+    pub fn has_uart1(&self) -> bool {
+        self.is_supported(25)
     }
 
     /// Returns true if NEOLED is implemented.
-    pub fn neoled(&self) -> bool {
-        self.supported(26)
+    pub fn has_neoled(&self) -> bool {
+        self.is_supported(26)
     }
 
     /// Returns true if TRACER is implemented.
-    pub fn tracer(&self) -> bool {
-        self.supported(27)
+    pub fn has_tracer(&self) -> bool {
+        self.is_supported(27)
     }
 
     /// Returns true if GPTMR is implemented.
-    pub fn gptmr(&self) -> bool {
-        self.supported(28)
+    pub fn has_gptmr(&self) -> bool {
+        self.is_supported(28)
     }
 
     /// Returns true if SLINK is implemented.
-    pub fn slink(&self) -> bool {
-        self.supported(29)
+    pub fn has_slink(&self) -> bool {
+        self.is_supported(29)
     }
 
     /// Returns true if ONEWIRE is implemented.
-    pub fn onewire(&self) -> bool {
-        self.supported(30)
+    pub fn has_onewire(&self) -> bool {
+        self.is_supported(30)
     }
 
     /// Returns true if NEORV32 is being simulated.
-    pub fn simulation(&self) -> bool {
-        self.supported(31)
+    pub fn is_simulation(&self) -> bool {
+        self.is_supported(31)
     }
 }
 

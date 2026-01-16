@@ -169,7 +169,7 @@ impl<'d> Dma<'d> {
         _instance: Peri<'d, T>,
         _irq: impl Binding<T::Interrupt, InterruptHandler<T>> + 'd,
     ) -> Result<Self, Error> {
-        if !crate::sysinfo::SysInfo::soc_config().dma() {
+        if !crate::sysinfo::SysInfo::soc_config().has_dma() {
             return Err(Error::NotSupported);
         }
 
@@ -340,10 +340,12 @@ trait SealedWord {
 pub trait Word: SealedWord {}
 
 impl SealedWord for u8 {
+    #[inline(always)]
     fn cfg_constant() -> DataConfig {
         DataConfig::ConstantByte
     }
 
+    #[inline(always)]
     fn cfg_increment() -> DataConfig {
         DataConfig::IncrementingByte
     }
@@ -351,10 +353,12 @@ impl SealedWord for u8 {
 impl Word for u8 {}
 
 impl SealedWord for u32 {
+    #[inline(always)]
     fn cfg_constant() -> DataConfig {
         DataConfig::ConstantWord
     }
 
+    #[inline(always)]
     fn cfg_increment() -> DataConfig {
         DataConfig::IncrementingWord
     }

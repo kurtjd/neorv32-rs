@@ -127,7 +127,7 @@ impl<'d> Pwm<'d> {
     ///
     /// Returns [`Error::NotSupported`] if PWM is not supported.
     pub fn new<T: Instance>(_instance: Peri<'d, T>, clkprsc: ClkPrsc) -> Result<Self, Error> {
-        if !crate::sysinfo::SysInfo::soc_config().pwm() {
+        if !crate::sysinfo::SysInfo::soc_config().has_pwm() {
             return Err(Error::NotSupported);
         }
 

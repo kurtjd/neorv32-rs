@@ -98,7 +98,7 @@ impl<'d, M: IoMode> Spi<'d, M> {
         spi_freq: u32,
         mode: Mode,
     ) -> Result<Self, Error> {
-        if !crate::sysinfo::SysInfo::soc_config().spi() {
+        if !crate::sysinfo::SysInfo::soc_config().has_spi() {
             return Err(Error::NotSupported);
         }
 

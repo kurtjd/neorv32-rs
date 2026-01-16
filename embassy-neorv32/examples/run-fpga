@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Set this to your neorv32 repo path
-BASE="../../../neorv32"
+BASE="$HOME/neorv32"
 
 # image_gen says it takes ELF but really seems to need raw bin? so convert.
 rust-objcopy $1 -O binary "$1.bin"

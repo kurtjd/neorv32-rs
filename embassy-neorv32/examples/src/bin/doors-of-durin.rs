@@ -4,9 +4,8 @@
 #[cfg(feature = "sim")]
 compile_error!("Doors of Durin example not available in simulation.");
 
-use embassy_neorv32::bind_interrupts;
-use embassy_neorv32::peripherals;
 use embassy_neorv32::uart::{self, Uart};
+use embassy_neorv32::{bind_interrupts, peripherals};
 use embassy_neorv32_examples::*;
 
 bind_interrupts!(struct Irqs {

@@ -10,7 +10,6 @@ use embassy_hal_internal::{Peri, PeripheralType};
 use embassy_sync::waitqueue::AtomicWaker;
 
 // Max number of GPIO ports available
-// Revisit: Do we want the user to configure this when not all 32 are available?
 const MAX_PORTS: usize = 32;
 
 /// GPIO interrupt handler binding.
@@ -65,7 +64,7 @@ pub struct Gpio<'d, M: IoMode> {
 
 impl<'d, M: IoMode> Gpio<'d, M> {
     fn new_inner<T: Instance>(_instance: Peri<'d, T>) -> Result<Self, Error> {
-        if !crate::sysinfo::SysInfo::soc_config().gpio() {
+        if !crate::sysinfo::SysInfo::soc_config().has_gpio() {
             return Err(Error::NotSupported);
         }
 

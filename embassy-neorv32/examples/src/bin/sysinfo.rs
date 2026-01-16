@@ -2,6 +2,7 @@
 #![no_main]
 
 use core::fmt::Write;
+
 use embassy_neorv32::sysinfo::SysInfo;
 use embassy_neorv32::uart::UartTx;
 use embassy_neorv32_examples::*;
@@ -46,93 +47,93 @@ async fn main(_spawner: embassy_executor::Spawner) {
 
     // Print processor features
     uart.blocking_write(b"\nProcessor Features:\n");
-    if soc_config.imem() {
+    if soc_config.has_imem() {
         uart.blocking_write(b"Internal IMEM\n");
     }
-    if soc_config.dmem() {
+    if soc_config.has_dmem() {
         uart.blocking_write(b"Internal DMEM\n");
     }
-    if soc_config.icache() {
+    if soc_config.has_icache() {
         uart.blocking_write(b"Internal ICACHE\n");
     }
-    if soc_config.dcache() {
+    if soc_config.has_dcache() {
         uart.blocking_write(b"Internal DCACHE\n");
     }
-    if soc_config.imem_as_rom() {
+    if soc_config.has_imem_as_rom() {
         uart.blocking_write(b"Internal IMEM as pre-initialized ROM\n");
     }
-    if soc_config.bootloader() {
+    if soc_config.has_bootloader() {
         uart.blocking_write(b"Internal bootloader\n");
     }
-    if soc_config.xbus() {
+    if soc_config.has_xbus() {
         uart.blocking_write(b"External bus interface (XBUS)\n");
     }
-    if soc_config.ocd() {
+    if soc_config.has_ocd() {
         uart.blocking_write(b"On-chip debugger\n");
     }
-    if soc_config.ocd_auth() {
+    if soc_config.has_ocd_auth() {
         uart.blocking_write(b"On-chip debugger authentication\n");
     }
 
     // Print supported peripherals
     uart.blocking_write(b"\nPeripherals Supported:\n");
-    if soc_config.uart0() {
+    if soc_config.has_uart0() {
         uart.blocking_write(b"UART0\n");
     }
-    if soc_config.uart1() {
+    if soc_config.has_uart1() {
         uart.blocking_write(b"UART1\n");
     }
-    if soc_config.twi() {
+    if soc_config.has_twi() {
         uart.blocking_write(b"TWI\n");
     }
-    if soc_config.twd() {
+    if soc_config.has_twd() {
         uart.blocking_write(b"TWD\n");
     }
-    if soc_config.spi() {
+    if soc_config.has_spi() {
         uart.blocking_write(b"SPI\n");
     }
-    if soc_config.sdi() {
+    if soc_config.has_sdi() {
         uart.blocking_write(b"SDI\n");
     }
-    if soc_config.gptmr() {
+    if soc_config.has_gptmr() {
         uart.blocking_write(b"GPTMR\n");
     }
-    if soc_config.gpio() {
+    if soc_config.has_gpio() {
         uart.blocking_write(b"GPIO\n");
     }
-    if soc_config.pwm() {
+    if soc_config.has_pwm() {
         uart.blocking_write(b"PWM\n");
     }
-    if soc_config.wdt() {
+    if soc_config.has_wdt() {
         uart.blocking_write(b"WDT\n");
     }
-    if soc_config.dma() {
+    if soc_config.has_dma() {
         uart.blocking_write(b"DMA\n");
     }
-    if soc_config.trng() {
+    if soc_config.has_trng() {
         uart.blocking_write(b"TRNG\n");
     }
-    if soc_config.onewire() {
+    if soc_config.has_onewire() {
         uart.blocking_write(b"ONEWIRE\n");
     }
-    if soc_config.neoled() {
+    if soc_config.has_neoled() {
         uart.blocking_write(b"NEOLED\n");
     }
-    if soc_config.tracer() {
+    if soc_config.has_tracer() {
         uart.blocking_write(b"TRACER\n");
     }
-    if soc_config.slink() {
+    if soc_config.has_slink() {
         uart.blocking_write(b"SLINK\n");
     }
-    if soc_config.clint() {
+    if soc_config.has_clint() {
         uart.blocking_write(b"CLINT\n");
     }
-    if soc_config.cfs() {
+    if soc_config.has_cfs() {
         uart.blocking_write(b"CFS\n");
     }
 
     // Are we in a simulation?
-    if soc_config.simulation() {
+    if soc_config.is_simulation() {
         uart.blocking_write(b"\nThe matrix has you.\n");
     }
 }

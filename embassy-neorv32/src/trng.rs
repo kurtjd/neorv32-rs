@@ -41,7 +41,7 @@ unsafe impl<'d, M: ReadMode> Send for Trng<'d, M> {}
 
 impl<'d, M: ReadMode> Trng<'d, M> {
     fn new_inner<T: Instance>(_instance: Peri<'d, T>) -> Result<Self, Error> {
-        if !crate::sysinfo::SysInfo::soc_config().trng() {
+        if !crate::sysinfo::SysInfo::soc_config().has_trng() {
             return Err(Error::NotSupported);
         }
 

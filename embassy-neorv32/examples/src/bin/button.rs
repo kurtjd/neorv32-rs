@@ -4,10 +4,9 @@
 #[cfg(feature = "sim")]
 compile_error!("Button example not available in simulation.");
 
-use embassy_neorv32::bind_interrupts;
 use embassy_neorv32::gpio::{self, Gpio};
-use embassy_neorv32::peripherals;
 use embassy_neorv32::uart::UartTx;
+use embassy_neorv32::{bind_interrupts, peripherals};
 use embassy_neorv32_examples::*;
 
 bind_interrupts!(struct Irqs {

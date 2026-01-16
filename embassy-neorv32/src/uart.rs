@@ -885,8 +885,8 @@ macro_rules! impl_instance {
     };
 }
 
-impl_instance!(UART0, Uart0, uart0);
-impl_instance!(UART1, Uart1, uart1);
+impl_instance!(UART0, Uart0, has_uart0);
+impl_instance!(UART1, Uart1, has_uart1);
 
 // Convenience for writing formatted strings to UART
 impl<'d, M: IoMode> core::fmt::Write for Uart<'d, M> {

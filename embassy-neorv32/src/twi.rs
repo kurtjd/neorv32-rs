@@ -181,7 +181,7 @@ impl<'d, M: IoMode> Twi<'d, M> {
         twi_freq: u32,
         clock_stretch_en: bool,
     ) -> Result<Self, Error> {
-        if !crate::sysinfo::SysInfo::soc_config().twi() {
+        if !crate::sysinfo::SysInfo::soc_config().has_twi() {
             return Err(Error::NotSupported);
         }
 

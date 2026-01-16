@@ -1,10 +1,9 @@
 #![no_std]
 #![no_main]
 
-use embassy_neorv32::bind_interrupts;
 use embassy_neorv32::dma::{self, Dma};
-use embassy_neorv32::peripherals;
 use embassy_neorv32::uart::UartTx;
+use embassy_neorv32::{bind_interrupts, peripherals};
 use embassy_neorv32_examples::*;
 
 bind_interrupts!(struct Irqs {

@@ -54,7 +54,7 @@ impl<'d> Wdt<'d, Unlocked> {
     ///
     /// Returns [`Error::NotSupported`] if WDT is not supported.
     pub fn new<T: Instance>(_instance: Peri<'d, T>) -> Result<Self, Error> {
-        if !crate::sysinfo::SysInfo::soc_config().wdt() {
+        if !crate::sysinfo::SysInfo::soc_config().has_wdt() {
             return Err(Error::NotSupported);
         }
 
