@@ -371,3 +371,15 @@ impl<'d, M: IoMode> embedded_hal_1::i2c::I2c for Twi<'d, M> {
         self.blocking_transaction(address, operations)
     }
 }
+
+// NOTE: TWI does not currently support async, but this is implemented anyway
+// to allow it to be used by drivers expecting async
+impl<'d, M: IoMode> embedded_hal_async::i2c::I2c for Twi<'d, M> {
+    async fn transaction(
+        &mut self,
+        address: u8,
+        operations: &mut [Operation<'_>],
+    ) -> Result<(), Self::Error> {
+        self.blocking_transaction(address, operations)
+    }
+}
