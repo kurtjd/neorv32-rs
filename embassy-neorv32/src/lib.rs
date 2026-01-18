@@ -83,3 +83,32 @@ macro_rules! enable_periph_irq {
     ($periph:ident) => {{ <$crate::peripherals::$periph as Instance>::Interrupt::enable() }};
 }
 pub(crate) use enable_periph_irq;
+
+/* TEMPORARY until `csrrci` fix is released:
+ * https://github.com/stnolting/neorv32/pull/1479
+ *
+ * This isn't ideal since we would like to cache MIE state and disable interrupts atomically,
+ * but at least this actually will disable interrupts.
+ */
+#[cfg(feature = "single-hart")]
+mod cs {
+    use critical_section::{Impl, RawRestoreState, set_impl};
+
+    struct SingleHartCriticalSection;
+    set_impl!(SingleHartCriticalSection);
+
+    unsafe impl Impl for SingleHartCriticalSection {
+        unsafe fn acquire() -> RawRestoreState {
+            let mie = riscv::register::mstatus::read().mie();
+            riscv::interrupt::disable();
+            mie
+        }
+
+        unsafe fn release(was_active: RawRestoreState) {
+            // Only re-enable interrupts if they were enabled before the critical section.
+            if was_active {
+                unsafe { riscv::interrupt::enable() }
+            }
+        }
+    }
+}

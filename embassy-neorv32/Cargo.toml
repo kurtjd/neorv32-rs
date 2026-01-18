@@ -13,7 +13,11 @@ default = ["time-driver", "rt"]
 defmt = ["dep:defmt"]
 rt = ["dep:riscv-rt", "neorv32-pac/rt"]
 v-trap = ["rt", "neorv32-pac/v-trap"]
-single-hart = ["riscv/critical-section-single-hart"]
+
+# TEMPORARY: Use our own CS until neorv32 csrcci fix is released
+#single-hart = ["riscv/critical-section-single-hart"]
+single-hart = ["critical-section/restore-state-bool"]
+
 dual-hart = ["critical-section/restore-state-u8"]
 
 # Note: CLINT MTIMER always runs at CPU freq, thus this needs to match CPU FREQ
