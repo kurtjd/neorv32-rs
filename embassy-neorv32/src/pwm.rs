@@ -1,6 +1,7 @@
 //! Pulse Width Modulation (PWM)
 use crate::sysinfo::SysInfo;
 use core::marker::PhantomData;
+use critical_section::{self, CriticalSection};
 use embassy_hal_internal::{Peri, PeripheralType};
 
 /// PWM error.
@@ -186,38 +187,42 @@ impl<'d> PwmChan<'d> {
             _phantom: PhantomData,
         };
 
-        if invert_polarity {
-            pwm.invert_polarity();
-        }
-
-        pwm.set_mode(mode);
         pwm.set_freq(pwm_freq);
-        pwm.enable();
+
+        // These all modify config registers, which all PWM channels share, hence the CS here
+        critical_section::with(|cs| {
+            if invert_polarity {
+                pwm.invert_polarity(cs);
+            }
+            pwm.set_mode(cs, mode);
+            pwm.enable(cs);
+        });
+
         pwm
     }
 
-    fn enable(&mut self) {
+    fn enable(&mut self, _cs: CriticalSection) {
         // SAFETY: Bit mask preserves previous channel values
         self.reg
             .enable()
             .modify(|r, w| unsafe { w.bits(r.bits() | (1 << self.channel)) });
     }
 
-    fn disable(&mut self) {
+    fn disable(&mut self, _cs: CriticalSection) {
         // SAFETY: Bit mask preserves previous channel values
         self.reg
             .enable()
             .modify(|r, w| unsafe { w.bits(r.bits() & !(1 << self.channel)) });
     }
 
-    fn invert_polarity(&mut self) {
+    fn invert_polarity(&mut self, _cs: CriticalSection) {
         // SAFETY: Bit mask preserves previous channel values
         self.reg
             .polarity()
             .modify(|r, w| unsafe { w.bits(r.bits() | (1 << self.channel)) });
     }
 
-    fn set_mode(&mut self, mode: Mode) {
+    fn set_mode(&mut self, _cs: CriticalSection, mode: Mode) {
         // SAFETY: Bit mask preserves previous channel values
         self.reg.mode().modify(|r, w| unsafe {
             w.bits(match mode {
@@ -249,44 +254,52 @@ impl<'d> PwmChan<'d> {
     }
 
     fn duty_cycle(&self) -> Percent {
-        Percent::new(((100 * self.cmp()) / (self.top() + 1)) as u8).expect("Infallible")
+        let cmp = self.cmp() as u32;
+        let top = self.top() as u32;
+        let denom = top + 1;
+        let percent = ((100 * cmp + (denom / 2)) / denom) as u8;
+
+        Percent::new(percent).expect("Infallible")
     }
 
     fn set_freq(&mut self, pwm_freq: u32) {
         assert!(pwm_freq != 0);
 
-        let clkprsc = self.clkprsc() as u64;
+        let clkprsc = u16::from(self.clkprsc()) as u64;
         let cpuclk = SysInfo::clock_freq() as u64;
 
         let new_top = match self.mode() {
             Mode::Fast => (cpuclk / (clkprsc * pwm_freq as u64)) - 1,
             Mode::PhaseCorrect => cpuclk / (2 * clkprsc * pwm_freq as u64),
         };
+
         assert!(new_top <= u16::MAX as u64);
 
         // SAFETY: We've ensured a valid TOP value above
         self.reg
             .channel(self.channel)
             .topcmp()
-            .write(|w| unsafe { w.top().bits(new_top as u16) });
+            .modify(|_, w| unsafe { w.top().bits(new_top as u16) });
     }
 
     /// Set the PWM channel duty cycle in percent.
     pub fn set_duty_cycle(&mut self, percent: Percent) {
-        // Round to nearest integer
-        let cmp = (u16::from(percent.inner()) * (self.top() + 1) + 50) / 100;
+        let percent = u32::from(percent.inner());
+        let top = self.top() as u32;
+        let denom = 100;
+        let cmp = (((percent) * (top + 1) + (denom / 2)) / denom) as u16;
 
         // SAFETY: We've ensured a valid CMP value above
         self.reg
             .channel(self.channel)
             .topcmp()
-            .write(|w| unsafe { w.cmp().bits(cmp) });
+            .modify(|_, w| unsafe { w.cmp().bits(cmp) });
     }
 }
 
 impl<'d> Drop for PwmChan<'d> {
     fn drop(&mut self) {
-        self.disable();
+        critical_section::with(|cs| self.disable(cs));
     }
 }
 
@@ -362,11 +375,11 @@ impl<'d> embedded_hal_02::PwmPin for PwmChan<'d> {
     type Duty = Percent;
 
     fn enable(&mut self) {
-        self.enable();
+        critical_section::with(|cs| self.enable(cs));
     }
 
     fn disable(&mut self) {
-        self.disable();
+        critical_section::with(|cs| self.disable(cs));
     }
 
     fn get_duty(&self) -> Self::Duty {

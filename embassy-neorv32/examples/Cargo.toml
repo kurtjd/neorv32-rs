@@ -37,10 +37,6 @@ embassy-sync = "0.7.2"
 riscv = "0.16.0"
 riscv-rt = "0.17.0"
 
-# PWM example makes use of these traits directly
-embedded-hal-02 = { package = "embedded-hal", version = "0.2.7", features = [
-    "unproven",
-] }
 # SPI example uses this for SpiDevice
 embedded-hal-bus = { version = "0.3.0", features = ["async"] }
 
