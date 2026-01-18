@@ -53,7 +53,7 @@ core::arch::global_asm!(
 #[unsafe(export_name = "hal_main")]
 fn hart_main(hart_id: usize, _: usize, _: usize) -> ! {
     // CLINT is used for software interrupts which is necessary for inter-hart communication
-    if !crate::sysinfo::SysInfo::soc_config().clint() {
+    if !crate::sysinfo::SysInfo::soc_config().has_clint() {
         panic!("CLINT must be supported for dual-hart to work");
     }
 
